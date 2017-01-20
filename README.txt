@@ -26,8 +26,7 @@ replacing it using pip.
 How to run
 ----------
 
-For executable version: run snr.exe (located within snr folder)
-(not currently provided because of filesize limitation of GitHub)
+For executable version: run snr.exe (located within WindowsExecutable folder)
 
 For Python version: assuming Python has been added to the PATH, run from the
 command line using "python snr.py"
@@ -70,7 +69,8 @@ Abbreviations used:
  - LK: Liang & Keilty model (fractional energy loss)
  - TW: Tang & Wang model (hot low-density media)
 
-See associated paper () for details of models used and associated
-calculations.
+See associated publication (arXiv ......., and journal version, when available) for details of models used and associated
+calculations.  Those who use the software to for research
+are requested to reference this publication in any published work.
 
 Contact information: Denis Leahy, leahy@ucalgary.ca
