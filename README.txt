@@ -1,4 +1,4 @@
-SNR Modelling Program - version 1.0, September 2016
+SNR Modelling Program - version 1.0, January 2017
 ===================================================
 
 Description: A GUI program used to model supernova remnants.
@@ -26,7 +26,7 @@ replacing it using pip.
 How to run
 ----------
 
-For executable version: run snr.exe (located within WindowsExecutable folder)
+For executable version: run snr.exe (located within WindowsVersion folder)
 
 For Python version: assuming Python has been added to the PATH, run from the
 command line using "python snr.py"
@@ -36,8 +36,7 @@ Required files (must remain in the same folder):
  - snr_calc.py
  - snr_gui.py
  - snr_plot.py
- - data directory
- - Crab_Nebula.ico
+ - data directory (should contain 11 files)
 
 
 Program usage details
@@ -69,8 +68,7 @@ Abbreviations used:
  - LK: Liang & Keilty model (fractional energy loss)
  - TW: Tang & Wang model (hot low-density media)
 
-See associated publication (arXiv ......., and journal version, when available) for details of models used and associated
-calculations.  Those who use the software to for research
-are requested to reference this publication in any published work.
+See arXiv paper (astrop-ph.HE 1701.05942) for details of models used and associated
+calculations.
 
-Contact information: Denis Leahy, leahy@ucalgary.ca
+This program is open source and is licensed under The 3-Clause BSD License.
