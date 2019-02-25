@@ -1,2 +1,2 @@
 # SNRmodels
-Python and Windows executables for SNR modelling program
+Python program for SNR modelling (Windows executable is the old version and no longer supported).
