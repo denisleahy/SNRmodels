@@ -2,8 +2,8 @@
 
 Creates GUI and initializes case-specific functions.
 
-Author: Jacqueline Williams
-Version: August 2016
+Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
+Version: Jan 2019
 """
 
 import snr_gui as gui
@@ -17,7 +17,7 @@ import math
 ELEMENT_NAMES = {"H": "Hydrogen", "He": "Helium", "C": "Carbon", "O": "Oxygen", "Ne": "Neon", "N": "Nitrogen",
                  "Mg": "Magnesium", "Si": "Silicon", "Fe": "Iron", "S": "Sulphur"}
 ELEMENT_ORDER = ["He", "C", "N", "O", "Ne", "Mg", "Si", "S", "Fe"]
-MODEL_DICT = {"lk": "Fractional energy loss", "cf": "Standard", "tw": "Hot low-density media", "wl": "Cloudy ISM"}
+MODEL_DICT = {"fel": "Fractional energy loss", "standard": "Standard", "hld": "Hot low-density media", "cism": "Cloudy ISM", "sedtay": "Sedov-Taylor"}
 ABUNDANCE = {"Solar": {"H": 12, "He": 10.93, "C": 8.52, "O": 8.83, "Ne": 8.08, "N": 7.92, "Mg": 7.58, "Si": 7.55,
                        "Fe": 7.50, "S": 7.33},
              "LMC": {"H": 12, "He": 10.94, "C": 8.04, "N": 7.14, "O": 8.35, "Ne": 7.61, "Na": 7.15, "Mg": 7.47,
@@ -29,8 +29,8 @@ ABUNDANCE = {"Solar": {"H": 12, "He": 10.93, "C": 8.52, "O": 8.83, "Ne": 8.08, "
              "Type Ia": {"H": 12, "He": 11.40, "C": 12.60, "N": 7.50, "O": 12.91, "Ne": 11.04, "Mg": 11.55, "Si": 12.75,
                          "S": 12.43, "Fe": 13.12}
              }
-
-
+             
+##############################################################################################################################
 def get_model_name(key, snr_em):
     """Get name of model to be shown on emissivity window.
 
@@ -48,14 +48,14 @@ def get_model_name(key, snr_em):
             name = "Standard (s\u200a=\u200a{0:.0f}, n\u200a=\u200a{1})".format(SNR.data["s"], SNR.data["n"])
         else:
             name = "Standard (Sedov)"
-    elif name == "Cloudy ISM":
+    elif (name == "Cloudy ISM" or name == "Sedov-Taylor"):
         if SNR.data["t"] < SNR.calc["t_st"]:
             name = "Standard (s\u200a=\u200a{0:.0f}, n\u200a=\u200a{1})".format(SNR.data["s"], SNR.data["n"])
         else:
             name = "{0} (C/\u03C4\u200a=\u200a{1:.0f})".format(name, SNR.data["c_tau"])
     return name
 
-
+##############################################################################################################################
 def s_change(update=True):
     """Changes available input parameters when s is changed.
 
@@ -70,11 +70,16 @@ def s_change(update=True):
         widgets["m_w"].label.grid_remove()
         widgets["v_w"].input.grid_remove()
         widgets["v_w"].label.grid_remove()
-        widgets["model"].input["lk"].config(state="normal")
-        widgets["model"].input["wl"].config(state="normal")
+        widgets["n_0"].input.grid()
+        widgets["n_0"].label.grid()
+        widgets["sigma_v"].input.grid()
+        widgets["sigma_v"].label.grid()
+        widgets["model"].input["fel"].config(state="normal")
+        widgets["model"].input["cism"].config(state="normal")
+        widgets["model"].input["sedtay"].config(state="normal")
         if 0.1 * SNR.calc["t_c"] <= SNR.calc["t_pds"]:
-            widgets["model"].input["tw"].config(state="normal")
-        widgets["n"].input.config(values=(0, 2, 4, 6, 7, 8, 9, 10, 12, 14))
+            widgets["model"].input["hld"].config(state="normal")
+        widgets["n"].input.config(values=(0, 1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14)) 
         if widgets["n"].get_value() == 1:
             # Reset n value if old value not available
             widgets["n"].value_var.set(0)
@@ -84,17 +89,22 @@ def s_change(update=True):
         widgets["m_w"].label.grid()
         widgets["v_w"].input.grid()
         widgets["v_w"].label.grid()
-        widgets["model"].input["lk"].config(state="disabled")
-        widgets["model"].input["tw"].config(state="disabled")
-        widgets["model"].input["wl"].config(state="disabled")
-        widgets["n"].input.config(values=(0, 1, 2, 7))
-        if widgets["n"].get_value() not in (0, 1, 2, 7):
+        widgets["n_0"].input.grid_remove()
+        widgets["n_0"].label.grid_remove()
+        widgets["sigma_v"].input.grid_remove()
+        widgets["sigma_v"].label.grid_remove()
+        widgets["model"].input["fel"].config(state="disabled")
+        widgets["model"].input["hld"].config(state="disabled")
+        widgets["model"].input["cism"].config(state="disabled")
+        widgets["model"].input["sedtay"].config(state="disabled")
+        widgets["n"].input.config(values=(6, 7, 8, 9, 10, 11, 12, 13, 14))
+        if widgets["n"].get_value() not in (6, 7, 8, 9, 10, 11, 12, 13, 14):
             # Reset n value if old value not available
-            widgets["n"].value_var.set(0)
+            widgets["n"].value_var.set(6)
     if update:
         SNR.update_output()
 
-
+##############################################################################################################################
 def title_change():
     """Change plot y-label and replot when plot type is changed without updating and recomputing values."""
 
@@ -103,7 +113,7 @@ def title_change():
     SNR.data["plot_type"] = plot_type
     SNR.update_plot(SNR.get_phases())
 
-
+##############################################################################################################################
 def enter_pressed(event):
     """Validate input and update output when user presses the enter key.
 
@@ -124,14 +134,14 @@ def enter_pressed(event):
                 widget = widgets["xmax"]
             increment_xlimits(widget, 0)
 
-
+##############################################################################################################################
 def limit_change():
     """Update plot when preset limits change without running the full update function."""
 
     SNR.data["range"] = SNR.widgets["range"].get_value()
     SNR.graph.display_plot(SNR.get_limits())
 
-
+##############################################################################################################################
 def increment_xlimits(widget, direction=0):
     """Update plot when custom limits change without running the full update function.
 
@@ -182,7 +192,7 @@ def increment_xlimits(widget, direction=0):
     # Redraw plot
     SNR.graph.display_plot(SNR.get_limits())
 
-
+##############################################################################################################################
 def model_change(update=True):
     """Update available input parameters when model type is changed and recalculate output.
 
@@ -191,49 +201,61 @@ def model_change(update=True):
                        initialization to avoid running update_output multiple times unnecessarily)
     """
 
-    if widgets["model"].get_value() != "lk":
-        widgets["t_lk"].input.grid_remove()
-        widgets["t_lk"].label.grid_remove()
-        widgets["gamma_0"].input.grid_remove()
-        widgets["gamma_0"].label.grid_remove()
-        widgets["eps"].input.grid_remove()
-        widgets["eps"].label.grid_remove()
+    if widgets["model"].get_value() != "fel":
+        widgets["t_fel"].input.grid_remove()
+        widgets["t_fel"].label.grid_remove()
+        widgets["gamma_1"].input.grid_remove()
+        widgets["gamma_1"].label.grid_remove()
     else:
-        widgets["t_lk"].input.validate()
-        widgets["t_lk"].input.grid()
-        widgets["t_lk"].label.grid()
-        widgets["gamma_0"].input.grid()
-        widgets["gamma_0"].label.grid()
-        widgets["eps"].input.grid()
-        widgets["eps"].label.grid()
-
-    if widgets["model"].get_value() == "cf":
+        widgets["t_fel"].input.validate()
+        widgets["t_fel"].input.grid()
+        widgets["t_fel"].label.grid()
+        widgets["gamma_1"].input.grid()
+        widgets["gamma_1"].label.grid()
+       
+        
+    if widgets["model"].get_value() == "standard":
         widgets["s"].input.config(state="readonly")
     else:
         widgets["s"].input.config(state="disabled")
 
-    if widgets["model"].get_value() == "tw":
-        widgets["t_tw"].input.config(state="normal")
-        widgets["t_tw"].revert_value()
-        widgets["t_tw"].input.grid()
-        widgets["t_tw"].label.grid()
-    else:
-        widgets["t_tw"].input.config(state="disabled")
-        widgets["t_tw"].value_var.set("N/A")
-        widgets["t_tw"].input.grid_remove()
-        widgets["t_tw"].label.grid_remove()
 
-    if widgets["model"].get_value() == "wl":
+    if widgets["model"].get_value() == "hld":
+        widgets["t_hld"].input.config(state="normal")
+        widgets["t_hld"].revert_value()
+        widgets["t_hld"].input.grid()
+        widgets["t_hld"].label.grid()
+    else:
+        widgets["t_hld"].input.config(state="disabled")
+        widgets["t_hld"].value_var.set("N/A")
+        widgets["t_hld"].input.grid_remove()
+        widgets["t_hld"].label.grid_remove()
+
+
+    if widgets["model"].get_value() == "cism":
         widgets["c_tau"].input.grid()
         widgets["c_tau"].label.grid()
     else:
         widgets["c_tau"].input.grid_remove()
         widgets["c_tau"].label.grid_remove()
 
+
+    if widgets["model"].get_value() == "sedtay":
+        widgets["n"].value_var.set("0")
+        widgets["n"].input.config(state="disabled")
+        widgets["c_tau"].value_var.set(0)
+        widgets["m_ej"].input.grid_remove()
+        widgets["m_ej"].label.grid_remove()
+    else:
+        widgets["n"].input.config(state="readonly")
+        widgets["c_tau"].value_var.set(1)
+        widgets["m_ej"].input.grid()
+        widgets["m_ej"].label.grid()
+
     if update:
         SNR.update_output()
 
-
+##############################################################################################################################
 def scale_change(widget):
     """Trigger change between linear and log scales on the plot axes.
 
@@ -255,7 +277,7 @@ def scale_change(widget):
             SNR.graph.graph.xaxis.set_major_formatter(SNR.graph.ticker)
     SNR.graph.display_plot(SNR.get_limits())
 
-
+##############################################################################################################################
 def update_ratio():
     dropdown = widgets["T_ratio"]
     if dropdown.get_value() == "Default":
@@ -266,8 +288,7 @@ def update_ratio():
         dropdown.input.config(values="Default")
     SNR.update_output()
 
-
-
+##############################################################################################################################
 def abundance_window(abundance_dict, ab_type):
     """Create window to view and adjust element abundances.
 
@@ -286,10 +307,10 @@ def abundance_window(abundance_dict, ab_type):
         window.root.geometry("%dx%d+%d+%d" %(200, 290, APP.root.winfo_x(), APP.root.winfo_y()))
         frame = window.container
         gui.SectionTitle(frame, "Element", size=10)
-        if window.os == "Linux":
+        if window.os != "Windows":
             title = "log(X/H)+12"
         else:
-            title = "log(X/H)\u200a+\a200a12"
+            title = "log(X/H)\u200a+\u200a12"
         gui.SectionTitle(gui.LayoutFrame(frame, column=1, row=0), title, size=10)
         for element in ELEMENT_ORDER:
             entry = gui.InputEntry(frame, element, ELEMENT_NAMES[element], "{0:.2f}".format(abundance_dict[element]),
@@ -297,16 +318,14 @@ def abundance_window(abundance_dict, ab_type):
             entry.input.bind(
                 "<Key>", lambda *args: gui.InputParam.instances[str(window.root)]["ab_type"].value_var.set("Custom"))
         button_frame = gui.LayoutFrame(frame, columnspan=2, padding=(0, 10))
+        
         if ab_type == "ISM":
-            types = ("LMC", "Solar")
+            types = ("Solar", "LMC")
             default_type = ism_ab_type
-            #gui.InputDropdown(gui.LayoutFrame(button_frame, row=0, column=0, padding=(2, 1, 2, 0)), "ab_type", None,
-            #                  ism_ab_type, lambda: reset_ab(str(window.root)), ("LMC", "Solar"), width=7)
         else:
             types = ("CC", "Type Ia")
             default_type = ej_ab_type
-            #gui.SubmitButton(gui.LayoutFrame(button_frame, row=0, column=0), "Reset",
-            #                 lambda: reset_ab(str(window.root), ab_type))
+            
         gui.InputDropdown(gui.LayoutFrame(button_frame, row=0, column=0, padding=(2, 1, 2, 0)), "ab_type", None,
                           default_type, lambda: reset_ab(str(window.root)), types, width=7)
         gui.SubmitButton(gui.LayoutFrame(button_frame, row=0, column=1), "Submit",
@@ -317,7 +336,7 @@ def abundance_window(abundance_dict, ab_type):
         window.root.update()
         window.canvas.config(scrollregion=(0, 0, window.container.winfo_reqwidth(), window.container.winfo_reqheight()))
 
-
+##############################################################################################################################
 def reset_ab(root_id):
     """Reset abundance window to defaults.
 
@@ -330,7 +349,7 @@ def reset_ab(root_id):
     for element, widget in elements.items():
         widget.value_var.set("{0:.2f}".format(ABUNDANCE[ab_default][element]))
 
-
+##############################################################################################################################
 def ab_window_close(root, ab_dict, ab_type, event=None):
     """Close abundance window and update abundance related variables.
 
@@ -346,6 +365,7 @@ def ab_window_close(root, ab_dict, ab_type, event=None):
         event.widget.validate()
     ab_window_open[ab_type] = False
     ab_dict.update(gui.InputParam.get_values(str(root)))
+    
     # Store current ejecta type from dropdown
     if ab_type == "ISM":
         ism_ab_type = ab_dict.pop("ab_type")
@@ -354,13 +374,13 @@ def ab_window_close(root, ab_dict, ab_type, event=None):
     root.destroy()
     SNR.update_output()
 
-
+##############################################################################################################################
 def emissivity_window():
     """Create window to display emissivity data for an SNR with input parameters from the main window."""
 
     window = gui.ScrollWindow()
     window.root.focus()
-    if window.os == "Linux":
+    if window.os != "Linux":
         window.root.config(cursor="watch")
     else:
         window.root.config(cursor="wait")
@@ -384,7 +404,6 @@ def emissivity_window():
     gui.InputParam(gui.LayoutFrame(range_frame), None, "Energy range (keV):", None)
     gui.InputEntry(gui.LayoutFrame(range_frame, row=0, column=1), "emin", "", 0.3, SNR_EM.update_luminosity_spectrum,
                    lambda value: 0 < value < widgets["emax"].get_value(), padding=(0, 5))
-    #gui.Text(gui.LayoutFrame(range_frame, row=0, column=2), "to", padding=(4, 5, 0, 0))
     gui.InputEntry(gui.LayoutFrame(range_frame, row=0, column=3), "emax", "to", 8, SNR_EM.update_luminosity_spectrum,
                    lambda value: value > widgets["emin"].get_value(), padding=(5, 5))
     SNR_EM.plots["Lnu"] = plt.OutputPlot(gui.LayoutFrame(right_frame), (5, 2.6), "Energy/keV",
@@ -431,8 +450,6 @@ def emissivity_window():
     SNR_EM.plots["temp"].properties = {"function": lambda x: SNR_EM.vector_temperature(x) * SNR_EM.data["T_s"], "color": "b"}
     SNR_EM.plots["density"].properties = {"function": lambda x: SNR_EM.vector_density(x) * 4 * SNR_EM.data["n_0"] *
                                                                 SNR_EM.data["mu_H"] * calc.M_H, "color": "r"}
-    #print(timeit.timeit(SNR_EM.update_output, number=1))
-    #profile.runctx("SNR_EM.update_output()", None, locals())
     SNR_EM.update_output()
     window.canvas.grid()
     window.root.bind("<1>", lambda event: event.widget.focus_set())
@@ -441,16 +458,19 @@ def emissivity_window():
     window.root.config(cursor="")
     window.canvas.config(scrollregion=(0, 0, window.container.winfo_reqwidth(), window.container.winfo_reqheight()))
 
-
+##############################################################################################################################
 def gt_zero(value):
     """Checks if value is positive and non-zero."""
-
+    
     return value > 0
 
+##############################################################################################################################
+    
 if __name__ == '__main__':
+    
     ab_window_open = {"ISM": False, "Ejecta": False}
     # Set initial ISM abundance type
-    ism_ab_type = "LMC"
+    ism_ab_type = "Solar"
     ej_ab_type = "Type Ia"
     APP = gui.ScrollWindow("root")
     root_id = "." + APP.container.winfo_parent().split(".")[1]
@@ -461,9 +481,7 @@ if __name__ == '__main__':
     SNR.data["ej_abundance"] = ABUNDANCE[ej_ab_type].copy()
     APP.root.wm_title("SNR Modelling Program")
     if APP.os == "Windows":
-        ICON = "Crab_Nebula.ico"
-        # Uncomment line before using pyinstaller in --onefile mode
-        #ICON = sys._MEIPASS+"/Crab_Nebula.ico"
+        ICON = "data/Crab_Nebula.ico"
         APP.root.tk.call("wm", "iconbitmap", APP.root._w, "-default", ICON)
     ws = APP.root.winfo_screenwidth()
     hs = APP.root.winfo_screenheight()
@@ -475,24 +493,25 @@ if __name__ == '__main__':
     APP.root.bind("<1>", lambda event: event.widget.focus_set())
     APP.input = gui.LayoutFrame(APP.container, 2, row=0, column=0)
     gui.SectionTitle(APP.input, "Input parameters:", 2)
+  
     # Note time isn't restricted to less than t_mrg - this is accounted for in snr_calc.py
     # If time was restricted, users could become confused due to rounding of displayed t_mrg
     gui.InputEntry(APP.input, "t", "Age (yr):", 100, SNR.update_output, gt_zero)
     gui.InputEntry(APP.input, "e_51", "Energy (x 10\u2075\u00B9 erg):", 1.0, SNR.update_output, gt_zero)
     gui.InputEntry(APP.input, "temp_ism", "ISM Temperature (K):", 100, SNR.update_output, gt_zero)
-    gui.InputEntry(APP.input, "m_ej", "Ejected mass (Msun):", 1.4, SNR.update_output, gt_zero)
+    gui.InputEntry(APP.input, "m_ej", "Ejected mass (M\u2609):", 1.4, SNR.update_output, gt_zero)
     gui.InputDropdown(APP.input, "n", "Ejecta power-law index, n:", 0, SNR.update_output,
-                      (0, 2, 4, 6, 7, 8, 9, 10, 12, 14))
-    gui.InputDropdown(APP.input, "s", "Ambient media power-law index, s:", 0, s_change, (0, 2), state="disabled")
-    gui.InputEntry(APP.input, "n_0", "ISM number density (cm\u207B\u00B3):", 2.0, SNR.update_output, gt_zero)
+                      (0, 1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14))
+    gui.InputDropdown(APP.input, "s", "CSM power-law index, s:", 0, s_change, (0, 2), state="disabled")
     if APP.os == "Linux":
         ratio_label = "Electron to ion temperature ratio Te/Ti:"
     else:
         ratio_label = "Electron to ion temperature ratio T\u2091\u200a/\u200aT\u1d62\u200a:"
     gui.InputDropdown(APP.input, "T_ratio", ratio_label, "Default", update_ratio, "Custom")
     gui.InputEntry(APP.input, "zeta_m", "Cooling adjustment factor:", 1.0, SNR.update_output, gt_zero)
+    gui.InputEntry(APP.input, "n_0", "ISM number density (cm\u207B\u00B3):", 2.0, SNR.update_output, gt_zero)
     gui.InputEntry(APP.input, "sigma_v", "ISM turbulence/random speed (km/s):", 7.0, SNR.update_output)
-    gui.InputEntry(APP.input, "m_w", "Stellar wind mass loss (Msun/yr):", 1e-7, SNR.update_output, gt_zero)
+    gui.InputEntry(APP.input, "m_w", "Stellar wind mass loss (M\u2609/yr):", 1e-7, SNR.update_output, gt_zero)
     gui.InputEntry(APP.input, "v_w", "Wind speed (km/s):", 30, SNR.update_output, gt_zero)
     gui.SubmitButton(APP.input, "Change ISM Abundances", lambda: abundance_window(SNR.data["abundance"], "ISM"),
                      sticky="w", padx=5, pady=(0, 5))
@@ -500,42 +519,61 @@ if __name__ == '__main__':
         APP.input, "Change Ejecta Abundances", lambda: abundance_window(SNR.data["ej_abundance"], "Ejecta"), sticky="w",
         padx=5)
     gui.InputParam(APP.input, label="Model type:")
+    
     MODEL_FRAME = gui.LayoutFrame(APP.input, 0, row=100, column=0, columnspan=2)
-    gui.InputRadio(MODEL_FRAME, "model", None, "cf", lambda *args: model_change(),
-                   (("cf", "Standard"), ("lk", "Fractional energy loss"), ("tw", "Hot low-density media", "\n"),
-                    ("wl", "Cloudy ISM")), padding=(10, 0, 0, 0))
-    gui.InputEntry(APP.input, "gamma_0", "Adiabatic index, 1.1 \u2264 \u03B3 \u2264 5/3:", 1.667, SNR.update_output,
-                   lambda value: 1.1 <= value <= 5.0 / 3.0)
-    gui.InputEntry(APP.input, "eps", "Fractional energy loss, 0 < \u03B5 \u2264 1:", 0.7, SNR.update_output,
-                   lambda value: 0 < value <= 1)
-    gui.InputDropdown(APP.input, "c_tau", "C/\u03C4", 2, SNR.update_output, (1, 2, 4))
-    gui.InputEntry(APP.input, "t_lk", "Fractional energy loss model start\ntime, within ST or PDS phase (yr):", 5000,
+    gui.InputRadio(MODEL_FRAME, "model", None, "standard", lambda *args: model_change(),
+                   (("standard", "Standard"), ("fel", "Fractional energy loss"), ("hld", "Hot low-density media", "\n"),
+                    ("cism", "Cloudy ISM"), ("sedtay", "Sedov-Taylor (m\u2091\u2C7C = 0)", "\n")), padding=(10, 0, 0, 0))
+    
+    gui.InputEntry(APP.input, "gamma_1", "Effective \u03B3\u2081, 1 \u2264 \u03B3\u2081 \u2264 5/3:", 1.666, SNR.update_output,
+                   lambda value: 1 <= value <= 5.0 / 3.0)
+    
+    gui.InputDropdown(APP.input, "c_tau", "C/\u03C4", 2, SNR.update_output, (0, 1, 2, 4))   
+                              
+    gui.InputEntry(APP.input, "t_fel", "Fractional energy loss model start\ntime, within ST or PDS phase (yr):", 5000,
                    SNR.update_output, lambda value: (SNR.calc["t_st"] <= value or SNR.calc["t_st"] > SNR.calc["t_pds"])
                                                      and value <= min(SNR.calc["t_mrg"]["PDS"], SNR.calc["t_mcs"]))
-    gui.InputEntry(APP.input, "t_tw", "Hot low-density media\nmodel end time (yr):", "4e5", SNR.update_output,
+    
+    gui.InputEntry(APP.input, "t_hld", "Hot low-density media\nmodel end time (yr):", "4e5", SNR.update_output,
                    lambda value: SNR.calc["t_c"]*0.1 <= value < 1e9)
+    
     SNR.buttons["em"] = gui.SubmitButton(APP.input, "Emissivity", emissivity_window, pady=10)
+    
     APP.plot_frame = gui.LayoutFrame(APP.container, (10, 0), row=0, column=1)
+    
     gui.SectionTitle(APP.plot_frame, "Output:")
+    
     APP.plot_controls = gui.LayoutFrame(APP.plot_frame, 0)
+    
     gui.InputRadio(gui.LayoutFrame(APP.plot_controls, 0), "plot_type", "Plot Type:", "r", lambda *args: title_change(),
                    (("r", "Radius"), ("v", "Velocity")), padding=(10, 0, 0, 0))
+    
     gui.CheckboxGroup(
         gui.LayoutFrame(APP.plot_controls, (80, 0, 0, 0), row=widgets["plot_type"].label.grid_info()["row"], column=1),
         "Log scale:", scale_change, (("x_scale", "x-axis", "0"), ("y_scale", "y-axis", "0")), padding=(10, 0, 0, 0))
+    
     plot_container = gui.LayoutFrame(APP.plot_frame, 0)
+    
     SNR.graph = plt.TimePlot(plot_container, (6.4, 4.4))
+    
     AXIS_FRAME = gui.LayoutFrame(APP.plot_frame, (0, 5), column=0)
+    
     gui.InputDropdown(gui.LayoutFrame(AXIS_FRAME, (0, 0, 15, 0), row=0, column=0), "range", "Plotted Time:", "Current",
                       limit_change, ("Current", "Reverse Shock Lifetime", "ED-ST", "PDS", "MCS"), width=19,
                       font="-size 9")
+    
     gui.InputSpinbox(gui.LayoutFrame(AXIS_FRAME, 0, row=0, column=1), "xmin", "Min:", "0", increment_xlimits,
                      lambda value: value != widgets["xmax"].get_value(), increment=10, from_=0, to=100000000, width=8)
+    
     gui.InputSpinbox(gui.LayoutFrame(AXIS_FRAME, 0, row=0, column=2), "xmax", "Max:", "900", increment_xlimits,
                      lambda value: value != widgets["xmin"].get_value(), increment=100, from_=0, to=100000000, width=8)
+    
     APP.output = gui.LayoutFrame(APP.plot_frame, (0, 10), column=0, columnspan=2)
+    
     APP.output_values = gui.LayoutFrame(APP.output, 0, row=0, column=0)
+    
     APP.output_times = gui.LayoutFrame(APP.output, (20, 0, 0, 0), row=0, column=1)
+    
     gui.SectionTitle(APP.output_values, "Values at specified time:", 4, 11)
     gui.SectionTitle(APP.output_times, "Phase transition times:", 4, 11)
     gui.OutputValue(APP.output_values, "T", "Blast-wave shock electron temperature:", "K")
@@ -544,20 +582,27 @@ if __name__ == '__main__':
     gui.OutputValue(APP.output_values, "rr", "Reverse shock radius:", "pc")
     gui.OutputValue(APP.output_values, "v", "Blast-wave shock velocity:", "km/s")
     gui.OutputValue(APP.output_values, "vr", "Reverse shock velocity:", "km/s")
-    gui.OutputValue(APP.output_times, "t-ST", "", "yr")
-    gui.OutputValue(APP.output_times, "t-WL", "", "yr")
-    gui.OutputValue(APP.output_times, "t-PDS", "", "yr")
-    gui.OutputValue(APP.output_times, "t-MCS", "", "yr")
-    gui.OutputValue(APP.output_times, "t-TW", "", "yr")
-    gui.OutputValue(APP.output_times, "t-LK", "", "yr")
-    gui.OutputValue(APP.output_times, "t-MRG", "", "yr")
+    gui.OutputValue(APP.output_values, "epsi", "", "", padding=0)
     gui.OutputValue(APP.output_times, "t-s2", "", "", padding=0)
+    gui.OutputValue(APP.output_times, "Core", "", "", padding=0)
+    gui.OutputValue(APP.output_times, "Rev", "", "", padding=0)    
+    gui.OutputValue(APP.output_times, "t-ST", "", "yr")       #Sedov-Taylor Phase
+    gui.OutputValue(APP.output_times, "t-CISM", "", "yr")       #White and Long
+    gui.OutputValue(APP.output_times, "t-PDS", "", "yr")      #Pressure Driven Snowplow
+    gui.OutputValue(APP.output_times, "t-MCS", "", "yr")      #Momentum Conserving Shell
+    gui.OutputValue(APP.output_times, "t-HLD", "", "yr")
+    gui.OutputValue(APP.output_times, "t-FEL", "", "yr")
+    gui.OutputValue(APP.output_times, "t-MRG", "", "yr")
+
+    
 
     APP.root.bind("<Return>", enter_pressed)
     SNR.update_output()
     model_change(False)
     s_change(False)
     APP.root.update()
-    widgets["t_lk"].value_var.set(round(SNR.calc["t_pds"]))
+    widgets["t_fel"].value_var.set(round(SNR.calc["t_pds"]))
     APP.canvas.config(scrollregion=(0, 0, APP.container.winfo_reqwidth(), APP.container.winfo_reqheight()))
     APP.root.mainloop()
+
+##############################################################################################################################

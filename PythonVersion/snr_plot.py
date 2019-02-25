@@ -2,18 +2,18 @@
 
 Classes used to create MatPlotLib plots with custom scientific notation display and simple update functions.
 
-Author: Jacqueline Williams
-Version: August 2016
+Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
+Version: Jan 2019
 """
 
 import math
 import matplotlib as mpl
 from matplotlib.figure import Figure
 import numpy as np
-mpl.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-
+##############################################################################################################################
+##############################################################################################################################
 class OutputPlot(Figure):
     """Create a simple plot with automatic y-scaling.
 
@@ -24,7 +24,7 @@ class OutputPlot(Figure):
         ticker (mpl.ticker.ScalarFormatter): formatter for x- and y-axis ticks
         canvas (FigureCanvasTkAgg): container for plot
     """
-
+##############################################################################################################################
     def __init__(self, master, size, xlabel, ylabel, **kwargs):
         """Create empty plot and initialize options.
 
@@ -54,6 +54,7 @@ class OutputPlot(Figure):
         self.graph.xaxis.offsetText.set_visible(False)
         self.graph.yaxis.offsetText.set_visible(False)
 
+##############################################################################################################################
     def add_data(self, x_data, y_data, **kwargs):
         """Add line to plot.
 
@@ -65,6 +66,7 @@ class OutputPlot(Figure):
 
         self.graph.plot(x_data, y_data, **kwargs)
 
+##############################################################################################################################
     def display_plot(self, top=1, limits=None):
         """Display current plot.
 
@@ -91,15 +93,18 @@ class OutputPlot(Figure):
         self.tight_layout(rect=(0, 0, 1, top), pad=0.5)  # Second tight-layout adjusts for the new axis titles
         self.canvas.show()
 
+##############################################################################################################################
     def clear_plot(self):
         """Remove all lines from plot."""
 
         self.graph.lines = []
 
+##############################################################################################################################
     def update_plot(self):
         pass
 
-
+##############################################################################################################################
+##############################################################################################################################
 class TimePlot(OutputPlot):
     """Specific type of OutputPlot used for radius/velocity vs. time graphs. Includes more advanced automatic y-scaling
     to account for a plotted x-range smaller than the range of data given.
@@ -113,6 +118,7 @@ class TimePlot(OutputPlot):
         canvas (FigureCanvasTkAgg): container for plot
     """
 
+##############################################################################################################################
     def __init__(self, master, size):
         """Create empty plot and initialize options.
 
@@ -126,6 +132,7 @@ class TimePlot(OutputPlot):
         self.ylabel = self.ylabel_dict["r"]
         OutputPlot.__init__(self, master, size, "Time/yr", self.ylabel)
 
+##############################################################################################################################
     def display_plot(self, time_limit):
         """Display current plot.
 
@@ -176,6 +183,7 @@ class TimePlot(OutputPlot):
                           ncol=5, columnspacing=0.4, handletextpad=0)
         OutputPlot.display_plot(self, 0.95)
 
+##############################################################################################################################
     def update_title(self, plot_type):
         """Update y-axis label on plot.
 
@@ -184,3 +192,5 @@ class TimePlot(OutputPlot):
         """
 
         self.ylabel = self.ylabel_dict[plot_type]
+
+##############################################################################################################################

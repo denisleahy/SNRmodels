@@ -2,17 +2,17 @@
 
 Classes to create widgets for SNR program.
 
-Author: Jacqueline Williams
-Version: August 2016
+Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
+Version: Jan 2019
 """
-
 import tkinter as tk
 from tkinter import ttk
 import platform
 
 OS = platform.system()
 
-
+##############################################################################################################################
+##############################################################################################################################
 class InputParam:
     """Create and grid label widgets for an input parameter.
 
@@ -31,6 +31,7 @@ class InputParam:
     input_options = {"font": "-size 10"}
     instances = {}
 
+##############################################################################################################################
     def __init__(self, master, identifier=None, label=None, default=None, padding=True):
         """Create and grid input parameter label.
 
@@ -62,6 +63,7 @@ class InputParam:
                 self.instances[root] = {}
             self.instances[root][identifier] = self
 
+##############################################################################################################################
     def get_value(self):
         """Get current input parameter value.
 
@@ -74,6 +76,7 @@ class InputParam:
         except ValueError:
             return self.value_var.get()
 
+##############################################################################################################################
     @classmethod
     def get_values(cls, root):
         """Get all input parameter values.
@@ -90,7 +93,8 @@ class InputParam:
             values[identifier] = widget.get_value()
         return values
 
-
+##############################################################################################################################
+##############################################################################################################################
 class InputEntry(InputParam):
     """Create entry widget with labels for input parameter.
 
@@ -110,6 +114,7 @@ class InputEntry(InputParam):
     input_options = InputParam.input_options.copy()
     input_options.update({"width": 7})
 
+##############################################################################################################################
     def __init__(self, master, identifier, label, default, callback=None, condition=lambda *args: True, **kwargs):
         """Create and grid input entry widget.
 
@@ -134,6 +139,7 @@ class InputEntry(InputParam):
         self.input.callback = callback
         self.condition = condition
 
+##############################################################################################################################
     def check_input(self, inp):
         """Check that user input is positive and satisfies any additional conditions specified.
 
@@ -153,12 +159,14 @@ class InputEntry(InputParam):
         except ValueError:
             return False
 
+##############################################################################################################################
     def revert_value(self):
         """Revert input to previous acceptable value."""
 
         self.value_var.set(self.previous)
 
-
+##############################################################################################################################
+##############################################################################################################################
 class InputDropdown(InputParam):
     """Create combobox widget (dropdown menu) with labels for input parameter.
 
@@ -177,6 +185,7 @@ class InputDropdown(InputParam):
     input_options = InputParam.input_options.copy()
     input_options.update({"width": 4, "state": "readonly"})
 
+##############################################################################################################################
     def __init__(self, master, identifier, label, default, callback, values, **kwargs):
         """Create and grid input dropdown widget.
 
@@ -198,7 +207,8 @@ class InputDropdown(InputParam):
         self.input.bind("<<ComboboxSelected>>", lambda e: callback())
         self.input.callback = callback
 
-
+##############################################################################################################################
+##############################################################################################################################
 class InputRadio(InputParam):
     """Create combobox widget (dropdown menu) with labels for input parameter.
 
@@ -217,6 +227,7 @@ class InputRadio(InputParam):
     input_options = {}#InputParam.input_options.copy()
     #input_options.update({"width": 5, "state": "readonly"})
 
+##############################################################################################################################
     def __init__(self, master, identifier, label, default, callback, values, **kwargs):
         """Create and grid input radio button widgets.
 
@@ -248,7 +259,8 @@ class InputRadio(InputParam):
         #self.input.bind("<FocusOut>", lambda e: callback())
         self.value_var.trace("w", callback)
 
-
+##############################################################################################################################
+##############################################################################################################################
 class InputSpinbox(InputEntry):
     """A spinbox widget with a text label.
 
@@ -266,6 +278,7 @@ class InputSpinbox(InputEntry):
 
     input_options = InputParam.input_options.copy()
 
+##############################################################################################################################
     def __init__(self, master, identifier, label, default, callback, condition=lambda *args: True, **kwargs):
         """Create and grid input spinbox widget.
 
@@ -292,7 +305,8 @@ class InputSpinbox(InputEntry):
         self.input.callback = callback
         self.condition = condition
 
-
+##############################################################################################################################
+##############################################################################################################################
 class InputCheckbox(InputParam):
     """A checkbox widget with a text label.
 
@@ -308,6 +322,7 @@ class InputCheckbox(InputParam):
         input (ttk.Checkbutton): checkbutton widget for input parameter
     """
 
+##############################################################################################################################
     def __init__(self, master, identifier, label, default, callback, **kwargs):
         """Create and grid input checkbox widget.
 
@@ -327,7 +342,8 @@ class InputCheckbox(InputParam):
         else:
             self.input.config(command=callback)
 
-
+##############################################################################################################################
+##############################################################################################################################
 class CheckboxGroup(InputParam):
     """A group of checkbox widgets with a text label.
 
@@ -342,6 +358,7 @@ class CheckboxGroup(InputParam):
         value_var (tk.StringVar): variable to store input parameter value
     """
 
+##############################################################################################################################
     def __init__(self, master, label, callback, values, **kwargs):
         """Create and grid group of checkbox widgets.
 
@@ -362,7 +379,8 @@ class CheckboxGroup(InputParam):
         else:
             InputCheckbox(master, values[0], values[1], values[2], callback, **kwargs).input.grid(row=self.row, column=i)
 
-
+##############################################################################################################################
+##############################################################################################################################
 class DisplayValue:
     """Unchanging displayed value with label and units.
 
@@ -372,6 +390,7 @@ class DisplayValue:
 
     options = {"font": "-size 10"}
 
+##############################################################################################################################
     def __init__(self, master, label_text, unit, value, digits=4, **kwargs):
         """Create and place widgets needed to display a numerical value with units.
 
@@ -396,7 +415,8 @@ class DisplayValue:
         value = ttk.Label(container, text=formatter.format(value, digits, unit), **self.options)
         value.pack(side="left")
 
-
+##############################################################################################################################
+##############################################################################################################################
 class OutputValue:
     """Unchanging displayed value with label and units.
 
@@ -412,6 +432,7 @@ class OutputValue:
     options = {"font": "-size 10"}
     instances = {}
 
+##############################################################################################################################
     def __init__(self, master, key, label, unit, digits=4, **kwargs):
         """Create and place widgets needed to display a changeable numerical value with units.
 
@@ -455,6 +476,7 @@ class OutputValue:
             self.instances[root] = {}
         self.instances[root][key] = self
 
+##############################################################################################################################
     def update_value(self, source):
         """Update displayed value.
 
@@ -466,8 +488,9 @@ class OutputValue:
         except ValueError:
             self.value_var.set(source[self.key])
 
+##############################################################################################################################
     @classmethod
-    def update(cls, source, root, phases=None):
+    def update(cls, source, root, CISM_overwrite, phases=None):
         """Update all OutputValue displayed values.
 
         Args:
@@ -481,20 +504,28 @@ class OutputValue:
                 widget.update_value(source)
             if "t-" in key:
                 phase = key.split("t-")[1]
-                if phase in phases or ("MRG" in key and phases[-1] in key):
+                if (phase in phases or ("MRG" in key and phases[-1] in key)):
                     index = phases.index(phase)
-                    widget.label.config(text="{} to {}:".format(phases[index-1], phases[index]))
+                    if (CISM_overwrite == 1 and phases[index-1] == "CISM" and phases[index] == "MCS"):
+                        widget.label.config(text="{} to PDS:".format(phases[index-1]))                      
+                    elif key != "t-s2":
+                        widget.label.config(text="{} to {}:".format(phases[index-1], phases[index]))
                     widget.container.grid()
-                elif (phase == "MRG"):
-                    widget.label.config(text="{} to merger:".format(phases[-1]))
+                elif phase == "MRG" and phases[-1] != "s2":
+                    if (CISM_overwrite == 1 and phases[-1] == "MCS"):
+                        widget.label.config(text="PDS to merger:")
+                    else:
+                        widget.label.config(text="{} to merger:".format(phases[-1]))
                     widget.container.grid()
                 else:
                     widget.container.grid_remove()
 
-
+##############################################################################################################################
+##############################################################################################################################
 class LayoutFrame(ttk.Frame):
     """Frame used to organize widget layout."""
 
+##############################################################################################################################
     def __init__(self, master, padding=0, **grid_options):
         """Create and grid frame widget.
 
@@ -509,7 +540,8 @@ class LayoutFrame(ttk.Frame):
             grid_options["row"] = get_row(master)
         self.grid(**grid_options, sticky='new')
 
-
+##############################################################################################################################
+##############################################################################################################################
 class ScrollWindow:
     """Create window that has automatic scrollbars when needed and centres content on any size of window.
 
@@ -521,7 +553,7 @@ class ScrollWindow:
         container (ttk.Frame): container frame for any input/output widgets in window, centred in window
         window: placed container on canvas widget
     """
-
+##############################################################################################################################
     def __init__(self, window_type=None):
         """Creates empty window with automatic scrollbars.
 
@@ -568,6 +600,7 @@ class ScrollWindow:
         self.root.bind("<Left>", lambda e: self.arrow_hscroll(-1))
         self.root.bind("<Right>", lambda e: self.arrow_hscroll(1))
 
+##############################################################################################################################
     def window_resize(self):
         """Check scrollbars and reconfigure canvas (run when window is resized)."""
 
@@ -581,6 +614,7 @@ class ScrollWindow:
             height=max(self.canvas.winfo_height(), self.container.winfo_reqheight())
         )
 
+##############################################################################################################################
     def check_scrollbar(self, scrollbar, offset):
         """Check if scrollbars are needed and adjust display accordingly.
 
@@ -595,7 +629,8 @@ class ScrollWindow:
         elif not scrollbar.visible and offset < 0:
             scrollbar.visible = True
             scrollbar.grid()
-
+            
+##############################################################################################################################
     def mouse_scroll(self, event):
         """Scrolls canvas vertically when mouse scrolls.
 
@@ -610,6 +645,7 @@ class ScrollWindow:
                 new_delta = -1 * int(event.delta / 120)
             self.canvas.yview_scroll(new_delta, "units")
 
+##############################################################################################################################
     def arrow_vscroll(self, delta):
         """Scrolls vertically when up or down arrow keys are pressed.
 
@@ -620,6 +656,7 @@ class ScrollWindow:
         if self.vsb.visible:
             self.canvas.yview_scroll(delta, "units")
 
+##############################################################################################################################
     def arrow_hscroll(self, delta):
         """Scrolls horizontally when left or right arrow keys are pressed.
 
@@ -630,10 +667,12 @@ class ScrollWindow:
         if self.hsb.visible:
             self.canvas.xview_scroll(delta, "units")
 
-
+##############################################################################################################################
+##############################################################################################################################
 class SectionTitle(ttk.Label):
     """Bold title for section headings."""
 
+##############################################################################################################################
     def __init__(self, master, title, colspan=1, size=12, **kwargs):
         """Create and grid title.
 
@@ -654,10 +693,12 @@ class SectionTitle(ttk.Label):
         row = get_row(master)
         self.grid(row=row, column=0, columnspan=colspan, sticky="new")
 
-
+##############################################################################################################################
+##############################################################################################################################
 class SubmitButton(ttk.Button):
     """Button that triggers a function when clicked."""
 
+##############################################################################################################################
     def __init__(self, master, text, action, **kwargs):
         """Create and grid button.
 
@@ -672,7 +713,7 @@ class SubmitButton(ttk.Button):
         row = get_row(master)
         self.grid(column=0, columnspan=2, row=row, **kwargs)
 
-
+##############################################################################################################################
 def get_row(master):
     """Get first unused row in a given frame widget.
 
@@ -689,3 +730,5 @@ def get_row(master):
         # If master widget does not have any widgets plotted yet
         row = 0
     return row
+
+##############################################################################################################################
