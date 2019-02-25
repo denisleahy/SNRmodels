@@ -4,6 +4,7 @@ Developed by Dr. Denis Leahy, Bryson Lawton and Jacqueline Williams
 
 Description: A GUI program used to model supernova remnants.
 
+IMPORTANT: The Windows Executable Version is no longer supported.
 
 Python requirements
 -------------------
