@@ -3,6 +3,9 @@ SNR Modelling Program - version 1.1, January 2019
 Developed by Dr. Denis Leahy, Bryson Lawton and Jacqueline Williams
 
 Description: A GUI program used to model supernova remnants.
+Also attached are a set of animations of hydrodynamic simulations of supernova remnants (animations.zip) and
+an animation (dEMdTvsT_n6_12.avi) of the Emission Measures and Temperatures for the shocked ISM and for the shocked ejecta.
+These calculations for these animations are described in the astroph arXiv preprint 1902.08284.
 
 IMPORTANT: The Windows Executable Version is no longer supported.
 
