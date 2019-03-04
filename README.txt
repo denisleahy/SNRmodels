@@ -4,7 +4,8 @@ Developed by Dr. Denis Leahy, Bryson Lawton and Jacqueline Williams
 
 Description: A GUI program used to model supernova remnants.
 Also attached are a set of animations of hydrodynamic simulations of supernova remnants (animations.zip) and
-an animation (dEMdTvsT_n6_12.avi) of the Emission Measures and Temperatures for the shocked ISM and for the shocked ejecta.
+an animation (dEMdTvsT_n6_12.avi) of the dimensionless Emission Measures and Temperatures for the shocked ISM 
+(demF and dtF) and for the shocked ejecta (demR and dtR).
 These calculations for these animations are described in the astroph arXiv preprint 1902.08284.
 
 IMPORTANT: The Windows Executable Version is no longer supported.
