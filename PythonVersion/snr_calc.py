@@ -3,7 +3,7 @@
 Classes used to represent a general SNR for main window and specific case of SNR for emissivity window.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: Jan 2019
+Version: April 1st, 2019
 """
 
 from collections import namedtuple
@@ -15,10 +15,14 @@ import functools
 
 PC_TO_KM = 3.0857e13  #km
 KEV_TO_ERG = 1.6021766208e-9   #erg
-BOLTZMANN = 1.380658e-16 #erg/K
+BOLTZMANN = 1.3806485e-16 #erg/K
 PLANCK = 6.62607015e-27 #erg/s
 SOLAR_MASS_TO_GRAM = 1.989e33 #g
-M_H = 1.673e-24
+M_H = 1.6726e-24
+MU_H = 1.35862
+MU_I = 1.2505
+MU_e = 1.15197
+MU_t = 0.59961
 K_SED = 1.528
 PHI_C = 0.5
 A_VALS = {"H": 1, "He": 4, "C": 12, "O": 16, "Ne": 20, "N": 14, "Mg": 24, "Si": 28, "Fe": 56, "S": 32}
@@ -29,21 +33,21 @@ BETA = 2
 PCyr_TO_KMs = PC_TO_KM / YR_TO_SEC # Converts from pc/yr to km/s (9.78e5 km/s)
 # _rchg corresponds to values at which behaviour of reverse shock changes (typically t_core, t_rst for n=2)
 # Note a_core = 2 * v_core / t_core 
-ValueSet = namedtuple("ValueSet", "l_ed phi_ed t_st r_st t_rchg r_rchg v_rchg a_rchg phi_eff f_n alpha")
+ValueSet = namedtuple("ValueSet", "l_ed phi_ed t_st r_st t_rev r_rev t_rchg r_rchg v_rchg a_rchg phi_eff f_n alpha")
 VALUE_DICT_S0 = {
-    0: ValueSet(1.50, 0.3, 0.495, 0.727, 0.495, 0.779, 0.533, 0.106, 0.0961, 3 / (4 * np.pi), 0.6),    
-    1: ValueSet(1.10, 0.343, 0.441, 0.703, 0.441, 0.524, 0.635, -0.005, 0.0960, 1 / (2 * np.pi), 0.5),
-    2: ValueSet(1.10, 0.343, 0.387, 0.679, 0.387, 0.503, 0.686, -0.115, 0.0947, 1 / (4 * np.pi), 1 / 3),
-    4: ValueSet(1.10, 0.343, 0.232, 0.587, 1.2, 0.775, 0.427, 0.712, 0.0791, 0.00645, 0.0746),
-    6: ValueSet(1.39, 0.39, 1.04, 1.07, 0.5133, 0.541, 0.527, 0.112, None, None, None),
-    7: ValueSet(1.26, 0.47, 0.732, 0.881, 0.3629, 0.469, 0.553, 0.116, None, None, None),
-    8: ValueSet(1.21, 0.52, 0.605, 0.788, 0.2922, 0.413, 0.530, 0.139, None, None, None),
-    9: ValueSet(1.19, 0.55, 0.523, 0.725, 0.2489, 0.371, 0.497, 0.162, None, None, None),
-    10: ValueSet(1.17, 0.57, 0.481, 0.687, 0.2204, 0.340, 0.463, 0.192, None, None, None),
-    11: ValueSet(1.16, 0.585, 0.452, 0.661, 0.1987, 0.316, 0.433, 0.222, None, None, None),
-    12: ValueSet(1.15, 0.60, 0.424, 0.636, 0.1818, 0.293, 0.403, 0.251, None, None, None),  
-    13: ValueSet(1.145, 0.61, 0.406, 0.620, 0.1681, 0.276, 0.378, 0.264, None, None, None),
-    14: ValueSet(1.14, 0.62, 0.389, 0.603, 0.1567, 0.259, 0.354, 0.277, None, None, None)
+    0: ValueSet(1.10, 0.343, 0.495, 0.727, 2.582, 1.634, 0.495, 0.779, 0.533, 0.106, 0.0961, 3 / (4 * np.pi), 0.6),    
+    1: ValueSet(1.10, 0.343, 0.441, 0.703, 2.893, 1.724, 0.441, 0.524, 0.635, -0.005, 0.0960, 1 / (2 * np.pi), 0.5),
+    2: ValueSet(1.10, 0.343, 0.387, 0.679, 4.141, 2.009, 0.387, 0.503, 0.686, -0.115, 0.0947, 1 / (4 * np.pi), 1 / 3),
+    4: ValueSet(1.10, 0.343, 0.232, 0.587, 2.562, 1.666, 1.2, 0.775, 0.427, 0.712, 0.0791, 0.00645, 0.0746),
+    6: ValueSet(1.3856, 0.3658, 1.04, 1.07, 2.805, 1.687, 0.5133, 0.541, 0.527, 0.112, None, None, None),
+    7: ValueSet(1.2631, 0.4725, 0.732, 0.881, 2.691, 1.654, 0.3629, 0.469, 0.553, 0.116, None, None, None),
+    8: ValueSet(1.2144, 0.5293, 0.605, 0.788, 2.682, 1.652, 0.2922, 0.413, 0.530, 0.139, None, None, None),
+    9: ValueSet(1.1878, 0.5651, 0.523, 0.725, 2.726, 1.666, 0.2489, 0.371, 0.497, 0.162, None, None, None),
+    10: ValueSet(1.171, 0.5897, 0.481, 0.687, 2.740, 1.670, 0.2204, 0.340, 0.463, 0.192, None, None, None),
+    11: ValueSet(1.1595, 0.6075, 0.452, 0.661, 2.769, 1.679, 0.1987, 0.316, 0.433, 0.222, None, None, None),
+    12: ValueSet(1.151, 0.6217, 0.424, 0.636, 2.740, 1.637, 0.1818, 0.293, 0.403, 0.251, None, None, None),  
+    13: ValueSet(1.1445, 0.6321, 0.406, 0.620, 2.827, 1.696, 0.1681, 0.276, 0.378, 0.264, None, None, None),
+    14: ValueSet(1.1394, 0.6407, 0.389, 0.603, 2.866, 1.707, 0.1567, 0.259, 0.354, 0.277, None, None, None)
 }
 
 #DONT have proper values for everything except L_ed and phi_ed
@@ -61,6 +65,74 @@ VALUE_DICT_S2 = {
     12: ValueSet2(1.2415, 0.4144, 0.0338, 1.2259),  
     13: ValueSet2(1.2356, 0.4221, 0.0268, 1.2217),
     14: ValueSet2(1.231, 0.4283, 0.0218, 1.2184)
+}
+
+ValueSetdEMF = namedtuple("ValueSetdEMFInv", "def0 t1ef t2ef t3ef t4ef a1ef a2ef a3ef a4ef")
+dEMF_DICT = {
+    0: ValueSetdEMF(1.0343, 0.088968, 1.7973, 5.4523, 212.16, -0.21388, -0.062395, 0.019185, 0.006374),
+    1: ValueSetdEMF(1.034, 0.069244, 1.5863, 5.286, 377.53, -0.2012, -0.063576, 0.015637, -0.010714),
+    2: ValueSetdEMF(1.0333, 0.04247, 1.2248, 5.632, 102.52, -0.18355, -0.053807, 0.020978, -0.007918),
+    4: ValueSetdEMF(1.0381, 0.007853, 0.29706, 12.873, 36.632, -0.14615, -0.042807, 0.041095, -0.001321),
+    6: ValueSetdEMF(0.6746, 0.80586, 2.2704, 9.438, 45.697, -0.20999, -0.04777, 0.04576, -0.00481),
+    7: ValueSetdEMF(0.7542, 0.53431, 1.7621, 9.7853, 47.795, -0.27137, -0.04595, 0.05211, -0.00631),
+    8: ValueSetdEMF(0.8081, 0.40372, 1.1229, 3.9604, 240.78, -0.31972, -0.11315, 0.01795, -0.00708),
+    9: ValueSetdEMF(0.8471, 0.33524, 1.1895, 8.9332, 40.988, -0.32353, -0.06303, 0.059833, -0.001358),
+    10: ValueSetdEMF(0.8767, 0.25626, 1.2476, 7.2565, 41.692, -0.28106, -0.06753, 0.04489, 0.000056795),
+    11: ValueSetdEMF(0.8998, 0.24002, 1.0709, 4.3649, 55.849, -0.29373, -0.10276, 0.02715, 0.0005721),
+    12: ValueSetdEMF(0.9184, 0.20832, 1.1873, 6.0202, 51.346, -0.27723, -0.089841, 0.057657, -0.009586),
+    13: ValueSetdEMF(0.9337, 0.20311, 1.1942, 7.4647, 53.164, -0.29323, -0.05229, 0.0341, 0.0056264),
+    14: ValueSetdEMF(0.9465, 0.1928, 1.1496, 7.4809, 42.566, -0.28826, -0.07038, 0.05166, -0.00212)
+}
+
+ValueSetdTF = namedtuple("ValueSetdTFInv", "dtf t1tf t2tf a1tf a2tf")
+dTF_DICT = {
+    0: ValueSetdTF(1.0234, 0.03583, 7.9771, 0.03811, -0.00051559),
+    1: ValueSetdTF(1.0239, 0.02592, 11.325, 0.03623, -0.00433),
+    2: ValueSetdTF(1.0245, 0.01408, 11.053, 0.0336, -0.00503),
+    4: ValueSetdTF(1.0239, 0.00537, 0.40537, 0.04366, 0.0024),
+    6: ValueSetdTF(1.2614, 0.1, 1.1974, -0.00741, 0.00091974),
+    7: ValueSetdTF(1.2227, 3.0116, 19.437, 0.02601, -0.00529),
+    8: ValueSetdTF(1.1922, 2.5676, 17.852, 0.03346, -0.00243),
+    9: ValueSetdTF(1.1694, 0.83038, 11.955, 0.02713, -0.00035205),
+    10: ValueSetdTF(1.1518, 0.47077, 11.242, 0.02739, -0.00047925),
+    11: ValueSetdTF(1.138, 0.4149, 13.72, 0.02805, -0.00028536),
+    12: ValueSetdTF(1.127, 0.31582, 11.863, 0.03019, -0.00032846),
+    13: ValueSetdTF(1.1179, 0.39999, 16.487, 0.035929, -0.004505),
+    14: ValueSetdTF(1.1103, 0.24283, 8.6548, 0.03594, -0.00032298)
+}
+
+ValueSetdEMR = namedtuple("ValueSetdEMRInv", "der t1er t2er t3er a1er a2er a3er a4er")
+dEMR_DICT = {
+    0: ValueSetdEMR(0.84352, 0.68201, 2.5196, 6.5196, 3.5193, 3.0284, 1.5369, 1.9315),
+    1: ValueSetdEMR(0.16079, 0.97003, 1.97, 5.97, 3.369, 2.8062, 1.7625, 1.9314),
+    2: ValueSetdEMR(5.4852, 0.21484, 2.5712, 7.4783, 3.594, 2.6926, 1.257, 1.9692),
+    4: ValueSetdEMR(0.4005, 0.12652, 2.4127, 16.011, 3.0886, 1.3641, 2.7001, 1.5229),
+    6: ValueSetdEMR(0.1604, 0.61461, 2.8333, 4.4822, 0, 2.4651, 1.2471, 1.9194),
+    7: ValueSetdEMR(0.625, 0.42728, 2.6576, 4.8889, 0, 2.6521, 1.3844, 1.9194),
+    8: ValueSetdEMR(1.5485, 0.33823, 2.9531, 4.5135, 0, 2.7332, 0.78063, 1.9198),
+    9: ValueSetdEMR(3.0872, 0.32215, 2.462, 4.9846, 0, 2.9551, 1.3352, 1.9209),
+    10: ValueSetdEMR(5.3995, 0.23576, 2.7997, 4.8193, 0, 2.7187, 1.0087, 1.926),
+    11: ValueSetdEMR(8.6343, 0.22097, 2.832, 4.8614, 0, 2.7817, 1.0238, 1.9272),
+    12: ValueSetdEMR(12.98, 0.21044, 2.6659, 4.9225, 0, 2.8849, 0.98963, 1.9411),
+    13: ValueSetdEMR(18.533, 0.19399, 2.73, 4.8213, 0, 2.8915, 1.0094, 1.9288),
+    14: ValueSetdEMR(25.495, 0.17475, 2.6817, 4.8485, 0, 2.8823, 1.0067, 1.9338)
+}
+
+ValueSetdTR = namedtuple("ValueSetdTRInv", "dtr t1tr t2tr t3tr a1tr a2tr a3tr a4tr")
+dTR_DICT = {
+    0: ValueSetdTR(0.03458, 0.24804, 3.4223, 4.4223, 2.0715, 1.0448, 2.7094, 0.7271),
+    1: ValueSetdTR(0.03838, 0.20222, 3.6594, 4.6594, 2.1888, 1.0786, 2.275, 0.73006),
+    2: ValueSetdTR(0.03936, 0.12993, 2.865, 7.5695, 2.3071, 1.1531, 0.01, 0.83867),
+    4: ValueSetdTR(0.33056, 0.11473, 0.61473, 2.6147, 1.7238, 0.76782, 0.44658, 0.77125),
+    6: ValueSetdTR(0.8868, 0.10014, 1.376, 5.0236, 0, -0.03928, 1.2644, 0.71579),
+    7: ValueSetdTR(0.5204, 0.22901, 1.229, 6.9959, 0, 0.07821, 1.1669, 0.71371),
+    8: ValueSetdTR(0.3368, 0.43989, 2.0375, 4.6312, 0, 0.54803, 1.5622, 0.71316),
+    9: ValueSetdTR(0.2347, 0.40168, 2.5233, 4.5042, 0, 0.65648, 1.8429, 0.719),
+    10: ValueSetdTR(0.1723, 0.3075, 2.6861, 4.5201, 0, 0.6537, 1.9969, 0.71592),
+    11: ValueSetdTR(0.1318, 0.26188, 2.4925, 4.5829, 0, 0.64362, 1.841, 0.72049),
+    12: ValueSetdTR(0.1039, 0.23824, 2.7662, 4.5589, 0, 0.69647, 2.0949, 0.71098),
+    13: ValueSetdTR(0.084, 0.21624, 2.8018, 4.5087, 0, 0.7265, 2.0792, 0.72111),
+    14: ValueSetdTR(0.0693, 0.19662, 2.9253, 4.4577, 0, 0.76016, 2.2472, 0.72422)
 }
 #Min and max radius value at the start and end of the ChevParker Data files
 S0_CHEV_RMIN = {6: 0.90606, 7: 0.93498, 8: 0.95023, 9: 0.95967, 10: 0.96609, 11: 0.97075, 12: 0.97428, 13: 0.97705, 14: 0.97928}
@@ -365,7 +437,11 @@ class SuperNovaRemnant:
                             color="r", label="Blast-Wave Shock")
         if self.data["model"] != "sedtay":
             direction = "reverse"
-            self.graph.add_data(plot_data[direction]["t"], plot_data[direction][self.data["plot_type"]],
+            if ((self.data["n"] >= 6) and (self.data["s"] == 0) and (self.data["model"] == "standard") and (self.data["plot_type"] == "eMeas" or self.data["plot_type"] == "temper")):
+                self.graph.add_data(plot_data["forward"]["t"], plot_data[direction][self.data["plot_type"]],
+                            color="b", label="Reverse Shock")
+            else:
+                self.graph.add_data(plot_data[direction]["t"], plot_data[direction][self.data["plot_type"]],
                             color="b", label="Reverse Shock")
             
         # Add vertical lines to show phase transitions
@@ -493,16 +569,17 @@ class SuperNovaRemnant:
 
 ###########################################################################################################################
     def get_plot_data(self, phases):
-        """Get of forward and reverse shock data used to plot radius vs. time or velocity vs. time
+        """Get of forward and reverse shock data used to plot radius vs. time or velocity vs. time or emission measure vs. time or temperature vs. time
 
         Args:
             phases (list): list of SNR phases for current model
 
         Returns:
-            dict: dictionary of np.ndarrays with shock radius, velocity, and time used to create output plots
+            dict: dictionary of np.ndarrays with shock radius, velocity, emission measure, temperature and time used to create output plots
         """
 
         plot_data = {}
+        forward_time = {}
         # Account for different reverse shock phases between s=0 and s=2
         if self.data["s"] == 0:
             rev_phases = ("early", "late")
@@ -510,13 +587,32 @@ class SuperNovaRemnant:
             rev_phases = "s2r",
         all_phases = {"forward": phases, "reverse": rev_phases}
         for direction, phase_list in all_phases.items():
-            plot_data[direction] = {"t": [], "r": [], "v": []}
+            plot_data[direction] = {"t": [], "r": [], "v": [], "eMeas": [], "temper": []}
             for phase in phase_list:
                 t, r, v = self.get_data(phase)
                 plot_data[direction]["t"] = np.concatenate([plot_data[direction]["t"], t])
                 plot_data[direction]["r"] = np.concatenate([plot_data[direction]["r"], r])
                 plot_data[direction]["v"] = np.concatenate([plot_data[direction]["v"], v])
+            if (direction == "forward"):
+                forward_time = plot_data[direction]["t"]
+            if ((self.data["n"] >= 6) and (self.data["s"] == 0) and (self.data["model"] == "standard") and (self.data["plot_type"] == "eMeas" or self.data["plot_type"] == "temper")):
+                if (self.data["plot_type"] == "eMeas"):
+                    if (direction == "forward"):
+                        eMeasf = self.get_EMandTempData(forward_time, "eMeasf")
+                        plot_data[direction]["eMeas"] = np.concatenate([plot_data[direction]["eMeas"], eMeasf])
+                    elif (direction == "reverse"):
+                        eMeasr = self.get_EMandTempData(forward_time, "eMeasr")
+                        plot_data[direction]["eMeas"] = np.concatenate([plot_data[direction]["eMeas"], eMeasr])
+                else:
+                    if (direction == "forward"):
+                        temperf = self.get_EMandTempData(forward_time, "temperf")
+                        plot_data[direction]["temper"] = np.concatenate([plot_data[direction]["temper"], temperf])
+                    elif (direction == "reverse"):
+                        temperr = self.get_EMandTempData(forward_time, "temperr")
+                        plot_data[direction]["temper"] = np.concatenate([plot_data[direction]["temper"], temperr])
+
         return plot_data
+
 
 ###########################################################################################################################
     def get_specific_data(self):
@@ -559,6 +655,145 @@ class SuperNovaRemnant:
         output_values = self.velocity(phase, self.radius_time(phase, t))
         return output_values["t"], output_values["r"], output_values["v"]
 
+#############################################################################################################################
+    def get_EMandTempData(self, timeArray, output = "tempAndEMeas"):
+        """Returns dictionary of emission measure and temperature for a forward or reverse shock.
+
+        Args:
+            timeArray: time array for all time values
+
+        Returns:
+            np.ndarray/float: forward emission measure values
+            np.ndarray/float: forward temperature values
+            np.ndarray/float: reverse emission measure values
+            np.ndarray/float: reverse temperature values    
+        """
+        if(output == "eMeasf"):
+            output_values = self.GetEMandTempArrays(timeArray, "eMeasf")
+            return output_values["eMeasf"]
+        elif(output == "temperf"):
+            output_values = self.GetEMandTempArrays(timeArray, "temperf")
+            return  output_values["Tempf"]
+        elif(output == "eMeasr"):
+            output_values = self.GetEMandTempArrays(timeArray, "eMeasr")
+            return output_values["eMeasr"]
+        elif(output == "temperr"):
+            output_values = self.GetEMandTempArrays(timeArray, "temperr")
+            return output_values["Tempr"]
+        else:
+            output_values = self.GetEMandTempArrays(timeArray)
+            return output_values["eMeasf"], output_values["Tempf"], output_values["eMeasr"], output_values["Tempr"]
+
+##########################################################################################################################
+    def GetEMandTempArrays(self, timeArray, output = "tempAndEMeas"):
+        """Returns dictionary of output for emission measure and temperature values.
+
+        Args:
+           timeArray: time array for all time values
+
+        Returns:
+            output: dictionary including time, emission measure & temperature data arrays
+        """
+
+        # Determine whether the input needs to be radius or time depending on if t(r) or r(t) is used
+        if isinstance(timeArray, np.ndarray):
+            # Ensure that original input arrays are not altered in the velocity functions
+            timeArray = np.array(timeArray)
+        output1_array = {}
+        output2_array = {}
+        output3_array = {}
+        output4_array = {}
+        input_arr = timeArray
+        
+        output1_func = self.emissionMeasure_functions[self.data["n"], "eMeasf"]
+        output2_func = self.temperature_functions[self.data["n"], "Tempf"]
+        output3_func = self.emissionMeasure_functions[self.data["n"], "eMeasr"]
+        output4_func = self.temperature_functions[self.data["n"], "Tempr"]
+        if (output == "eMeasf"):
+            for t in timeArray:
+                output1_array = np.append(output1_array, output1_func(t))
+            output1_array = np.delete(output1_array, 0)
+            output1_array = np.array(output1_array, dtype='float64')
+        elif (output == "temperf"):
+            for t in timeArray:
+                output2_array = np.append(output2_array, output2_func(t))
+            output2_array = np.delete(output2_array, 0)
+            output2_array = np.array(output2_array, dtype='float64')
+        elif (output == "eMeasr"):
+            for t in timeArray:
+                output3_array = np.append(output3_array, output3_func(t))
+            output3_array = np.delete(output3_array, 0)
+            output3_array = np.array(output3_array, dtype='float64')
+        elif (output == "temperr"):
+            for t in timeArray:
+                output4_array = np.append(output4_array, output4_func(t))
+            output4_array = np.delete(output4_array, 0)
+            output4_array = np.array(output4_array, dtype='float64')
+        else:
+            for t in timeArray:
+                output1_array = np.append(output1_array, output1_func(t))
+                output2_array = np.append(output2_array, output2_func(t))
+                output3_array = np.append(output3_array, output3_func(t))
+                output4_array = np.append(output4_array, output4_func(t)) 
+                #Fix this
+            output1_array = np.delete(output1_array, 0)
+            output2_array = np.delete(output2_array, 0)
+            output3_array = np.delete(output3_array, 0)
+            output4_array = np.delete(output4_array, 0)
+            
+            output1_array = np.array(output1_array, dtype='float64')
+            output2_array = np.array(output2_array, dtype='float64')
+            output3_array = np.array(output3_array, dtype='float64')
+            output4_array = np.array(output4_array, dtype='float64')
+
+        # Generate output
+        output = {
+            "t": input_arr,
+            "eMeasf": output1_array,
+            "Tempf": output2_array,
+            "eMeasr": output3_array,
+            "Tempr": output4_array
+        }
+        
+        return output
+
+#########################################################################################################################
+    def _EMTemp_solutions(self, n, key):
+        """Returns specific type of function used to calculate values for emission measure and temperature
+
+        Args:
+            n (int): the n value for the current case
+            key (str): determines which function is returned, see function_dict for possible values
+
+        Returns:
+            function: a function to calculate the parameter specified 
+        """
+
+        def EM_forward(t):
+            t /= self.calc["t_ch"]
+            return self.get_plot_dEMF(n,t)
+
+        def EM_reverse(t):
+            t /= self.calc["t_ch"]
+            return self.get_plot_dEMR(n,t)
+
+        def temp_forward(t):
+            t /= self.calc["t_ch"]
+            return self.get_plot_dTF(n,t)
+
+        def temp_reverse(t):
+            t /= self.calc["t_ch"]
+            return self.get_plot_dTR(n,t)
+
+        function_dict = {
+            "emf": EM_forward,
+            "emr": EM_reverse,
+            "Tempf": temp_forward,
+            "Tempr": temp_reverse
+        }
+        return function_dict[key]
+  
+     
 ############################################################################################################################
     def time_array(self, phase):
         """Returns an array of times appropriate for a given phase.
@@ -1337,6 +1572,8 @@ class SuperNovaRemnant:
         self.radius_functions = {}
         self.velocity_functions = {}
         self.time_functions = {}
+        self.emissionMeasure_functions = {}
+        self.temperature_functions = {}
 
         for n in VALUE_DICT_S0:
             self.radius_functions[n, "PDS"] = self._pds_solution(n, "r")
@@ -1349,6 +1586,12 @@ class SuperNovaRemnant:
             self.velocity_functions[n, "HLD"] = self._hld_solution(n, "v")
             self.radius_functions[n, "CISM"] = self._cism_solution(n, "r")
             self.velocity_functions[n, "CISM"] = self._cism_solution(n, "v")
+            
+            self.emissionMeasure_functions[n, "eMeasf"] = self._EMTemp_solutions(n, "emf")
+            self.emissionMeasure_functions[n, "eMeasr"] = self._EMTemp_solutions(n, "emr")
+            self.temperature_functions[n, "Tempf"] = self._EMTemp_solutions(n, "Tempf")
+            self.temperature_functions[n, "Tempr"] = self._EMTemp_solutions(n, "Tempr")
+            
             if n == 0:
                 self.radius_functions[n, "sedTay"] = self._sedtay_solution(n, "r")
                 self.velocity_functions[n, "sedTay"] = self._sedtay_solution(n, "v")
@@ -1400,6 +1643,156 @@ class SuperNovaRemnant:
                 self.velocity_functions[n, "s2"] = self._s2nlt3_solution(n, "v")
                 self.velocity_functions[n, "s2r"] = self._s2nlt3_solution(n, "vr")
 
+#######################################################################################################################
+    def get_plot_dEMF(self, n, t):
+        """Get dEMF from n and t values
+
+        Returns:
+            dEMF: dEMF value from input parameters
+        """
+        self.dEMFcnsts =dEMF_DICT[n]
+        self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
+                                *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
+        self.calc["RCRf"] = 0
+        if (t < self.cnst.t_st):
+            self.calc["R0STf"] = self.calc["r_ch"]*self.calc["cx"]*(t)**((self.data["n"]-3)/self.data["n"])
+            self.calc["RCRf"] = self.calc["R0STf"]*PC_TO_KM*10**5 
+        elif (t >= self.cnst.t_st):
+            self.calc["RTMf"] = self.calc["r_ch"]*((self.cnst.r_st**2.5)+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(0.4)
+            self.calc["RCRf"] = self.calc["RTMf"]*PC_TO_KM*10**5
+        self.calc["EM0"] = (16*self.data["n_0"]**2*(MU_H/MU_e)*self.calc["RCRf"]**3)
+            
+       
+        if (t < self.dEMFcnsts.t1ef):
+           dEMF = self.dEMFcnsts.def0
+        
+        elif ((self.dEMFcnsts.t1ef <= t) and (t < self.dEMFcnsts.t2ef)):
+            dEMF = self.dEMFcnsts.def0 * ((t/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef))
+            
+        elif ((self.dEMFcnsts.t2ef <= t) and (t < self.dEMFcnsts.t3ef)):
+            dEMF = (self.dEMFcnsts.def0 * ((self.dEMFcnsts.t2ef/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef)) 
+                                        * ((t/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)))
+
+        elif ((self.dEMFcnsts.t3ef <= t) and (t < self.dEMFcnsts.t4ef)):
+            dEMF = (self.dEMFcnsts.def0 * ((self.dEMFcnsts.t2ef/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef)) 
+                                        * ((self.dEMFcnsts.t3ef/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)) 
+                                        * ((t/self.dEMFcnsts.t3ef)**(self.dEMFcnsts.a3ef)))
+            
+        elif (self.dEMFcnsts.t4ef <= t):
+            dEMF = (self.dEMFcnsts.def0 * ((self.dEMFcnsts.t2ef/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef)) 
+                                        * ((self.dEMFcnsts.t3ef/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)) 
+                                        * ((self.dEMFcnsts.t4ef/self.dEMFcnsts.t3ef)**(self.dEMFcnsts.a3ef))
+                                        * ((t/self.dEMFcnsts.t4ef)**(self.dEMFcnsts.a4ef)))
+        return self.calc["EM0"]*dEMF    
+            
+
+#######################################################################################################################
+    def get_plot_dTF(self, n, t):
+        """Get dTF from n and t values
+
+        Returns:
+            dTF: dTF value from input parameters
+        """
+        self.dTFcnsts = dTF_DICT[n]
+        self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
+                                *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
+        self.calc["VCRf"] = 0
+        if (t < self.cnst.t_st):
+            self.calc["V0STf"] = self.calc["v_ch"]*10**5*((self.data["n"]-3)/self.data["n"])*self.calc["cx"]*(t)**(-3/self.data["n"])
+            self.calc["VCRf"] = self.calc["V0STf"] 
+        elif (t >= self.cnst.t_st):
+            self.calc["VTMf"] = 0.4*((XI_0)**0.5)*self.calc["v_ch"]*10**5*((((self.cnst.r_st)**(2.5))+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(-0.6))
+            self.calc["VCRf"] = self.calc["VTMf"]
+        
+        self.calc["T0"] = (3/16)*MU_t*M_H/KEV_TO_ERG*self.calc["VCRf"]**2
+
+        if (t < self.dTFcnsts.t1tf):
+           dTF = self.dTFcnsts.dtf
+        
+        elif ((self.dTFcnsts.t1tf <= t) and (t < self.dTFcnsts.t2tf)):
+            dTF = self.dTFcnsts.dtf * ((t/self.dTFcnsts.t1tf)**(self.dTFcnsts.a1tf))
+            
+        elif (self.dTFcnsts.t2tf <= t):
+            dTF = (self.dTFcnsts.dtf * ((self.dTFcnsts.t2tf/self.dTFcnsts.t1tf)**(self.dTFcnsts.a1tf)) 
+                                        * ((t/self.dTFcnsts.t2tf)**(self.dTFcnsts.a2tf)))
+        return self.calc["T0"]*dTF     
+            
+
+#######################################################################################################################
+    def get_plot_dEMR(self, n, t):
+        """Get dEMR from n and t values
+
+        Returns:
+            dEMR: dEMR value from input parameters
+        """
+        self.dEMRcnsts = dEMR_DICT[n]
+        self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
+                                *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
+        self.calc["RCRf"] = 0
+        if (t < self.cnst.t_st):
+            self.calc["R0STf"] = self.calc["r_ch"]*self.calc["cx"]*(t)**((self.data["n"]-3)/self.data["n"])
+            self.calc["RCRf"] = self.calc["R0STf"]*PC_TO_KM*10**5
+        elif (t >= self.cnst.t_st):
+            self.calc["RTMf"] = self.calc["r_ch"]*((self.cnst.r_st**2.5)+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(0.4)
+            self.calc["RCRf"] = self.calc["RTMf"]*PC_TO_KM*10**5
+            
+        self.calc["EM0"] = (16*self.data["n_0"]**2*(MU_H/MU_e)*self.calc["RCRf"]**3)
+       
+        if (t < self.dEMRcnsts.t1er):
+           dEMR = self.dEMRcnsts.der * ((t/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a1er))
+        
+        elif ((self.dEMRcnsts.t1er <= t) and (t < self.dEMRcnsts.t2er)):
+            dEMR = self.dEMRcnsts.der * ((t/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er))
+            
+        elif ((self.dEMRcnsts.t2er <= t) and (t < self.dEMRcnsts.t3er)):
+            dEMR = (self.dEMRcnsts.der * ((self.dEMRcnsts.t2er/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er)) 
+                                        * ((t/self.dEMRcnsts.t2er)**(-1.0*self.dEMRcnsts.a3er)))
+
+        elif (self.dEMRcnsts.t3er <= t):
+            dEMR = (self.dEMRcnsts.der * ((self.dEMRcnsts.t2er/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er)) 
+                                        * ((self.dEMRcnsts.t3er/self.dEMRcnsts.t2er)**(-1.0*self.dEMRcnsts.a3er)) 
+                                        * ((t/self.dEMRcnsts.t3er)**(-1.0*self.dEMRcnsts.a4er)))
+        return self.calc["EM0"]*dEMR     
+            
+
+#######################################################################################################################
+    def get_plot_dTR(self, n, t):
+        """Get dTR from n and t values
+
+        Returns:
+            dTR: dTR value from input parameters
+        """
+
+        self.dTRcnsts = dTR_DICT[n]
+        self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
+                                *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
+        self.calc["VCRf"] = 0
+        if (t < self.cnst.t_st):
+            self.calc["V0STf"] = self.calc["v_ch"]*10**5*((self.data["n"]-3)/self.data["n"])*self.calc["cx"]*(t)**(-3/self.data["n"])
+            self.calc["VCRf"] = self.calc["V0STf"]
+        elif (t >= self.cnst.t_st):
+            self.calc["VTMf"] = 0.4*((XI_0)**0.5)*self.calc["v_ch"]*10**5*((((self.cnst.r_st)**(2.5))+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(-0.6))
+            self.calc["VCRf"] = self.calc["VTMf"]
+        
+        self.calc["T0"] = (3/16)*MU_t*M_H/KEV_TO_ERG*self.calc["VCRf"]**2
+       
+        if (t < self.dTRcnsts.t1tr):
+            dTR = self.dTRcnsts.dtr * ((t/self.dTRcnsts.t1tr)**(self.dTRcnsts.a1tr))
+        
+        elif ((self.dTRcnsts.t1tr <= t) and (t < self.dTRcnsts.t2tr)):
+            dTR = self.dTRcnsts.dtr * ((t/self.dTRcnsts.t1tr)**(self.dTRcnsts.a2tr))
+            
+        elif ((self.dTRcnsts.t2tr <= t) and (t < self.dTRcnsts.t3tr)):
+            dTR = (self.dTRcnsts.dtr * ((self.dTRcnsts.t2tr/self.dTRcnsts.t1tr)**(self.dTRcnsts.a2tr)) 
+                                        * ((t/self.dTRcnsts.t2tr)**(self.dTRcnsts.a3tr)))
+
+        elif (self.dTRcnsts.t3tr <= t):
+            dTR = (self.dTRcnsts.dtr * ((self.dTRcnsts.t2tr/self.dTRcnsts.t1tr)**(self.dTRcnsts.a2tr)) 
+                                        * ((self.dTRcnsts.t3tr/self.dTRcnsts.t2tr)**(self.dTRcnsts.a3tr)) 
+                                        * ((t/self.dTRcnsts.t3tr)**(self.dTRcnsts.a4tr)))
+        return self.calc["T0"]*dTR     
+   
+       
 #####################################################################################################################
 #####################################################################################################################
 class SNREmissivity:
@@ -1552,7 +1945,10 @@ class SNREmissivity:
         else:
             output = {"lum": lum, "em": em[0], "Tem": em[1]}
             
-        gui.OutputValue.update(output, self.root, 0)
+        if (self.widgets["model"].get_value() == "cism" and self.widgets["c_tau"].get_value() == 0):
+            gui.OutputValue.update(output, self.root, 1)
+        else:
+            gui.OutputValue.update(output, self.root, 0)
         
 
 #######################################################################################################################
@@ -1573,7 +1969,10 @@ class SNREmissivity:
             output = {"lum": lum[0], "lum_f": lum[1], "lum_r": lum[2]}
         else:
             output = {"lum": lum}
-        gui.OutputValue.update(output, self.root, 0)
+        if (self.widgets["model"].get_value() == "cism" and self.widgets["c_tau"].get_value() == 0):
+            gui.OutputValue.update(output, self.root, 1)
+        else:
+            gui.OutputValue.update(output, self.root, 0)
 
 #######################################################################################################################
     def update_plot(self, key, limits):

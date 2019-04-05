@@ -3,7 +3,7 @@
 Creates GUI and initializes case-specific functions.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: Jan 2019
+Version: April 1st, 2019
 """
 
 import snr_gui as gui
@@ -29,6 +29,7 @@ ABUNDANCE = {"Solar": {"H": 12, "He": 10.93, "C": 8.52, "O": 8.83, "Ne": 8.08, "
              "Type Ia": {"H": 12, "He": 11.40, "C": 12.60, "N": 7.50, "O": 12.91, "Ne": 11.04, "Mg": 11.55, "Si": 12.75,
                          "S": 12.43, "Fe": 13.12}
              }
+switchPlotToDefault = False
              
 ##############################################################################################################################
 def get_model_name(key, snr_em):
@@ -74,6 +75,9 @@ def s_change(update=True):
         widgets["n_0"].label.grid()
         widgets["sigma_v"].input.grid()
         widgets["sigma_v"].label.grid()
+        if ((widgets["n"].get_value() >= 6) and (widgets["model"].get_value() == "standard")):
+            widgets["plot_type"].input["eMeas"].config(state="normal")
+            widgets["plot_type"].input["temper"].config(state="normal")
         widgets["model"].input["fel"].config(state="normal")
         widgets["model"].input["cism"].config(state="normal")
         widgets["model"].input["sedtay"].config(state="normal")
@@ -85,6 +89,7 @@ def s_change(update=True):
             widgets["n"].value_var.set(0)
     else:
         # Restore previous values for input parameters m_w and v_w and reduce available n values
+        global switchPlotToDefault
         widgets["m_w"].input.grid()
         widgets["m_w"].label.grid()
         widgets["v_w"].input.grid()
@@ -93,6 +98,11 @@ def s_change(update=True):
         widgets["n_0"].label.grid_remove()
         widgets["sigma_v"].input.grid_remove()
         widgets["sigma_v"].label.grid_remove()
+        if (widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
+            switchPlotToDefault = True
+            widgets["plot_type"].value_var.set("r")
+        widgets["plot_type"].input["eMeas"].config(state="disabled")
+        widgets["plot_type"].input["temper"].config(state="disabled")
         widgets["model"].input["fel"].config(state="disabled")
         widgets["model"].input["hld"].config(state="disabled")
         widgets["model"].input["cism"].config(state="disabled")
@@ -105,13 +115,38 @@ def s_change(update=True):
         SNR.update_output()
 
 ##############################################################################################################################
+def n_change(update=True):
+    """Changes available input parameters when n is changed.
+
+    Args:
+        update (bool): true if SuperNovaRemnant instance needs to be updated (generally only False when run during
+                       initialization to avoid running update_output multiple times unnecessarily)
+    """
+    if ((widgets["n"].get_value() >= 6) and (widgets["s"].get_value() == 0) and (widgets["model"].get_value() == "standard")):
+        widgets["plot_type"].input["eMeas"].config(state="normal")
+        widgets["plot_type"].input["temper"].config(state="normal")
+    else:
+        global switchPlotToDefault
+        if (widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
+            switchPlotToDefault = True
+            widgets["plot_type"].value_var.set("r")
+        widgets["plot_type"].input["eMeas"].config(state="disabled")
+        widgets["plot_type"].input["temper"].config(state="disabled") 
+ 
+    if update:
+        SNR.update_output()
+
+##############################################################################################################################
 def title_change():
     """Change plot y-label and replot when plot type is changed without updating and recomputing values."""
-
+    global switchPlotToDefault
     plot_type = widgets["plot_type"].get_value()
     SNR.graph.update_title(plot_type)
     SNR.data["plot_type"] = plot_type
-    SNR.update_plot(SNR.get_phases())
+    if (not switchPlotToDefault):
+        SNR.update_plot(SNR.get_phases())
+    else:
+        switchPlotToDefault = False
 
 ##############################################################################################################################
 def enter_pressed(event):
@@ -200,7 +235,7 @@ def model_change(update=True):
         update (bool): true if SuperNovaRemnant instance needs to be updated (generally only False when run during
                        initialization to avoid running update_output multiple times unnecessarily)
     """
-
+    global switchPlotToDefault
     if widgets["model"].get_value() != "fel":
         widgets["t_fel"].input.grid_remove()
         widgets["t_fel"].label.grid_remove()
@@ -216,7 +251,21 @@ def model_change(update=True):
         
     if widgets["model"].get_value() == "standard":
         widgets["s"].input.config(state="readonly")
+        if ((widgets["n"].get_value() >= 6) and (widgets["s"].get_value() == 0)):
+            widgets["plot_type"].input["eMeas"].config(state="normal")
+            widgets["plot_type"].input["temper"].config(state="normal")
+        else:
+            if(widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
+                switchPlotToDefault = True
+                widgets["plot_type"].value_var.set("r")
+            widgets["plot_type"].input["eMeas"].config(state="disabled")
+            widgets["plot_type"].input["temper"].config(state="disabled") 
     else:
+        if(widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
+            switchPlotToDefault = True
+            widgets["plot_type"].value_var.set("r")
+        widgets["plot_type"].input["eMeas"].config(state="disabled")
+        widgets["plot_type"].input["temper"].config(state="disabled") 
         widgets["s"].input.config(state="disabled")
 
 
@@ -464,8 +513,7 @@ def gt_zero(value):
     
     return value > 0
 
-##############################################################################################################################
-    
+##############################################################################################################################    
 if __name__ == '__main__':
     
     ab_window_open = {"ISM": False, "Ejecta": False}
@@ -488,7 +536,7 @@ if __name__ == '__main__':
     if APP.os == "Linux":
         width = 1000
     else:
-        width = 880
+        width = 930
     APP.root.geometry("%dx%d+%d+%d" %(width, 650, (ws-width)/2, (hs-700)/2))
     APP.root.bind("<1>", lambda event: event.widget.focus_set())
     APP.input = gui.LayoutFrame(APP.container, 2, row=0, column=0)
@@ -500,7 +548,7 @@ if __name__ == '__main__':
     gui.InputEntry(APP.input, "e_51", "Energy (x 10\u2075\u00B9 erg):", 1.0, SNR.update_output, gt_zero)
     gui.InputEntry(APP.input, "temp_ism", "ISM Temperature (K):", 100, SNR.update_output, gt_zero)
     gui.InputEntry(APP.input, "m_ej", "Ejected mass (M\u2609):", 1.4, SNR.update_output, gt_zero)
-    gui.InputDropdown(APP.input, "n", "Ejecta power-law index, n:", 0, SNR.update_output,
+    gui.InputDropdown(APP.input, "n", "Ejecta power-law index, n:", 0, n_change,
                       (0, 1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14))
     gui.InputDropdown(APP.input, "s", "CSM power-law index, s:", 0, s_change, (0, 2), state="disabled")
     if APP.os == "Linux":
@@ -546,7 +594,7 @@ if __name__ == '__main__':
     APP.plot_controls = gui.LayoutFrame(APP.plot_frame, 0)
     
     gui.InputRadio(gui.LayoutFrame(APP.plot_controls, 0), "plot_type", "Plot Type:", "r", lambda *args: title_change(),
-                   (("r", "Radius"), ("v", "Velocity")), padding=(10, 0, 0, 0))
+                   (("r", "Radius"), ("v", "Velocity"), ("eMeas", "Emission Measure", "\n"), ("temper", "Temperature")), padding=(10, 0, 0, 0))
     
     gui.CheckboxGroup(
         gui.LayoutFrame(APP.plot_controls, (80, 0, 0, 0), row=widgets["plot_type"].label.grid_info()["row"], column=1),
@@ -595,11 +643,11 @@ if __name__ == '__main__':
     gui.OutputValue(APP.output_times, "t-MRG", "", "yr")
 
     
-
     APP.root.bind("<Return>", enter_pressed)
     SNR.update_output()
     model_change(False)
     s_change(False)
+    n_change(False)
     APP.root.update()
     widgets["t_fel"].value_var.set(round(SNR.calc["t_pds"]))
     APP.canvas.config(scrollregion=(0, 0, APP.container.winfo_reqwidth(), APP.container.winfo_reqheight()))

@@ -1,4 +1,4 @@
-SNR Modelling Program - version 1.1, January 2019
+SNR Modelling Program - version 1.1.1, April 1st, 2019
 ===================================================
 Developed by Dr. Denis Leahy, Bryson Lawton and Jacqueline Williams
 
@@ -66,7 +66,7 @@ Abbreviations used:
  - MCS: momentum-conserving shell
  - CISM: Cloudy ISM phase, starts at t_ST (defined in TM99)
 
-
+-----------------------------------
 Version 1.1 Changes
 -----------------------------------
 - Time when the reverse shock reaches the core's edge now displayed under transition times
@@ -81,9 +81,14 @@ Version 1.1 Changes
 - Cloudy ISM model data files updated with more accurate structure models from White & Long solutions
 - 5th model type "Sedov-Taylor" with zero ejecta mass added
 - Various smaller bug fixes
------------------------------------
 
-See 2017 and 2019 arXiv papers (astrop-ph 1701.05942 and 1902.08284 ) for details of models used and associated
+-----------------------------------
+Version 1.1.1 Changes
+-----------------------------------
+- Emission Measure and Temperature plots added to main window for s = 0, n > 5 cases
+
+
+See arXiv paper (astrop-ph.HE 1701.05942) for details of models used and associated
 calculations.
 
 This program is open source and is licensed under The 3-Clause BSD License.

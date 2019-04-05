@@ -3,7 +3,7 @@
 Classes used to create MatPlotLib plots with custom scientific notation display and simple update functions.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: Jan 2019
+Version: April 1st, 2019
 """
 
 import math
@@ -127,7 +127,7 @@ class TimePlot(OutputPlot):
             size (tuple): width and height of plot in inches
         """
 
-        self.ylabel_dict = {"v": r"Velocity/km s$^{-1}$", "r": "Radius/pc"}
+        self.ylabel_dict = {"v": r"Velocity/km s$^{-1}$", "r": "Radius/pc", "eMeas": "Emission Measure/cm^-3", "temper": "Temperature/keV"}
         # Set default to radius graph
         self.ylabel = self.ylabel_dict["r"]
         OutputPlot.__init__(self, master, size, "Time/yr", self.ylabel)

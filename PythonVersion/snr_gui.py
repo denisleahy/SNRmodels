@@ -3,7 +3,7 @@
 Classes to create widgets for SNR program.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: Jan 2019
+Version: April 1st, 2019
 """
 import tkinter as tk
 from tkinter import ttk
