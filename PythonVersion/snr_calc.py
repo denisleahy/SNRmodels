@@ -3,7 +3,7 @@
 Classes used to represent a general SNR for main window and specific case of SNR for emissivity window.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: April 1st, 2019
+Version: Jan 2019
 """
 
 from collections import namedtuple
@@ -14,21 +14,27 @@ from scipy.integrate import quad, cumtrapz, nquad
 import functools
 
 PC_TO_KM = 3.0857e13  #km
-KEV_TO_ERG = 1.6021766208e-9   #erg
-BOLTZMANN = 1.3806485e-16 #erg/K
-PLANCK = 6.62607015e-27 #erg/s
-SOLAR_MASS_TO_GRAM = 1.989e33 #g
-M_H = 1.6726e-24
+KEV_TO_ERG = 1.60218e-9   #erg
+BOLTZMANN = 1.38066e-16 #erg/K
+PLANCK = 6.62608e-27 #erg/s
+SOLAR_MASS_TO_GRAM = 1.9891e33 #g
+M_H = 1.67262e-24
 MU_H = 1.35862
 MU_I = 1.2505
 MU_e = 1.15197
 MU_t = 0.59961
+MU_ratej = 0.94105
+MU_tej = 0.70033
+MU_I2 = 1.53685
+MU_e2 = 1.28663
+MU_Iej = MU_I2
+MU_eej = MU_e2
 K_SED = 1.528
 PHI_C = 0.5
-A_VALS = {"H": 1, "He": 4, "C": 12, "O": 16, "Ne": 20, "N": 14, "Mg": 24, "Si": 28, "Fe": 56, "S": 32}
-Z_VALS = {"H": 1, "He": 2, "C": 6, "O": 8, "Ne": 10, "N": 7, "Mg": 12, "Si": 14, "Fe": 26, "S": 16}
+A_VALS = {"H": 1, "He": 4, "C": 12, "O": 16, "Ne": 20, "N": 14, "Mg": 24, "Si": 28, "Fe": 56, "S": 32, "Ca": 42, "Ni": 60, "Na": 22, "Al": 26, "Ar": 36}
+Z_VALS = {"H": 1, "He": 2, "C": 6, "O": 8, "Ne": 10, "N": 7, "Mg": 12, "Si": 14, "Fe": 26, "S": 16, "Ca": 20, "Ni": 28, "Na": 11, "Al": 13, "Ar": 18}
 XI_0 = 2.026
-YR_TO_SEC = 365.25 * 24 * 3600 #s
+YR_TO_SEC = 365.26 * 24 * 3600 #s
 BETA = 2
 PCyr_TO_KMs = PC_TO_KM / YR_TO_SEC # Converts from pc/yr to km/s (9.78e5 km/s)
 # _rchg corresponds to values at which behaviour of reverse shock changes (typically t_core, t_rst for n=2)
@@ -50,90 +56,99 @@ VALUE_DICT_S0 = {
     14: ValueSet(1.1394, 0.6407, 0.389, 0.603, 2.866, 1.707, 0.1567, 0.259, 0.354, 0.277, None, None, None)
 }
 
-#DONT have proper values for everything except L_ed and phi_ed
-ValueSet2 = namedtuple("ValueSet2", "l_ed phi_ed a2 bbm")
+ValueSet2 = namedtuple("ValueSet2", "l_ed phi_ed a2 bbm dTf2 dTr2 dEMf2 dEMr2")
 VALUE_DICT_S2 = {
-    0: ValueSet2(1.50, 0.025, 0, 0), 
-    1: ValueSet2(1.50, 0.25, 0, 0),
-    2: ValueSet2(1.50, 0.25, 0, 0),
-    6: ValueSet2(1.4362, 0.2469, 0.5331, 1.3767),
-    7: ValueSet2(1.3389, 0.314, 0.2318, 1.2987),
-    8: ValueSet2(1.2976, 0.3521, 0.131, 1.2671),
-    9: ValueSet2(1.2745, 0.3764, 0.0846, 1.2498),
-    10: ValueSet2(1.2596, 0.3929, 0.0593, 1.239),
-    11: ValueSet2(1.2492, 0.4051, 0.0439, 1.2314),
-    12: ValueSet2(1.2415, 0.4144, 0.0338, 1.2259),  
-    13: ValueSet2(1.2356, 0.4221, 0.0268, 1.2217),
-    14: ValueSet2(1.231, 0.4283, 0.0218, 1.2184)
+    0: ValueSet2(1.50, 0.025, 0, 0, 0, 0.8868, 0, 0), 
+    1: ValueSet2(1.50, 0.25, 0, 0, 0, 0.8868, 0, 0),
+    2: ValueSet2(1.50, 0.25, 0, 0, 0, 0.8868, 0, 0),
+    4: ValueSet2(1.50, 0.25, 0, 0, 0, 0.8868, 0, 0),
+    6: ValueSet2(1.4362, 0.2469, 0.5331, 1.3767, 0.1417, 0.0413, 17.6005, 12.9549),
+    7: ValueSet2(1.3389, 0.314, 0.2318, 1.2987, 0.0298, 0.0254, 99.3549, 47.8751),
+    8: ValueSet2(1.2976, 0.3521, 0.131, 1.2671, 0.0533, 0.0169, 56.9161, 115.9666),
+    9: ValueSet2(1.2745, 0.3764, 0.0846, 1.2498, 0.0677, 0.0119, 45.8373, 227.321),
+    10: ValueSet2(1.2596, 0.3929, 0.0593, 1.239, 0.0515, 0.0088668, 62.7305, 391.5409),
+    11: ValueSet2(1.2492, 0.4051, 0.0439, 1.2314, 0.042, 0.0068421, 79.1564, 619.3189),
+    12: ValueSet2(1.2415, 0.4144, 0.0338, 1.2259, 0.036, 0.0054354, 94.6553, 920.7526),  
+    13: ValueSet2(1.2356, 0.4221, 0.0268, 1.2217, 0.0451, 0.0044209, 75.1756, 1307.5),
+    14: ValueSet2(1.231, 0.4283, 0.0218, 1.2184, 0.0411, 0.0036663, 83.7641, 1788.5)
 }
 
-ValueSetdEMF = namedtuple("ValueSetdEMFInv", "def0 t1ef t2ef t3ef t4ef a1ef a2ef a3ef a4ef")
-dEMF_DICT = {
-    0: ValueSetdEMF(1.0343, 0.088968, 1.7973, 5.4523, 212.16, -0.21388, -0.062395, 0.019185, 0.006374),
-    1: ValueSetdEMF(1.034, 0.069244, 1.5863, 5.286, 377.53, -0.2012, -0.063576, 0.015637, -0.010714),
-    2: ValueSetdEMF(1.0333, 0.04247, 1.2248, 5.632, 102.52, -0.18355, -0.053807, 0.020978, -0.007918),
-    4: ValueSetdEMF(1.0381, 0.007853, 0.29706, 12.873, 36.632, -0.14615, -0.042807, 0.041095, -0.001321),
-    6: ValueSetdEMF(0.6746, 0.80586, 2.2704, 9.438, 45.697, -0.20999, -0.04777, 0.04576, -0.00481),
-    7: ValueSetdEMF(0.7542, 0.53431, 1.7621, 9.7853, 47.795, -0.27137, -0.04595, 0.05211, -0.00631),
-    8: ValueSetdEMF(0.8081, 0.40372, 1.1229, 3.9604, 240.78, -0.31972, -0.11315, 0.01795, -0.00708),
-    9: ValueSetdEMF(0.8471, 0.33524, 1.1895, 8.9332, 40.988, -0.32353, -0.06303, 0.059833, -0.001358),
-    10: ValueSetdEMF(0.8767, 0.25626, 1.2476, 7.2565, 41.692, -0.28106, -0.06753, 0.04489, 0.000056795),
-    11: ValueSetdEMF(0.8998, 0.24002, 1.0709, 4.3649, 55.849, -0.29373, -0.10276, 0.02715, 0.0005721),
-    12: ValueSetdEMF(0.9184, 0.20832, 1.1873, 6.0202, 51.346, -0.27723, -0.089841, 0.057657, -0.009586),
-    13: ValueSetdEMF(0.9337, 0.20311, 1.1942, 7.4647, 53.164, -0.29323, -0.05229, 0.0341, 0.0056264),
-    14: ValueSetdEMF(0.9465, 0.1928, 1.1496, 7.4809, 42.566, -0.28826, -0.07038, 0.05166, -0.00212)
+InverseCloudyConstants = namedtuple("InverseCloudyConstants", "dEMc dTc Kc")
+VALUE_DICT_Cloudy = {
+    0: InverseCloudyConstants(0.5164, 1.2896, 1.0), 
+    1: InverseCloudyConstants(0.7741, 1.3703, 0.746),
+    2: InverseCloudyConstants(1.6088, 1.3693, 0.541),
+    4: InverseCloudyConstants(6.9322, 1.3833, 0.270),
 }
 
-ValueSetdTF = namedtuple("ValueSetdTFInv", "dtf t1tf t2tf a1tf a2tf")
-dTF_DICT = {
-    0: ValueSetdTF(1.0234, 0.03583, 7.9771, 0.03811, -0.00051559),
-    1: ValueSetdTF(1.0239, 0.02592, 11.325, 0.03623, -0.00433),
-    2: ValueSetdTF(1.0245, 0.01408, 11.053, 0.0336, -0.00503),
-    4: ValueSetdTF(1.0239, 0.00537, 0.40537, 0.04366, 0.0024),
-    6: ValueSetdTF(1.2614, 0.1, 1.1974, -0.00741, 0.00091974),
-    7: ValueSetdTF(1.2227, 3.0116, 19.437, 0.02601, -0.00529),
-    8: ValueSetdTF(1.1922, 2.5676, 17.852, 0.03346, -0.00243),
-    9: ValueSetdTF(1.1694, 0.83038, 11.955, 0.02713, -0.00035205),
-    10: ValueSetdTF(1.1518, 0.47077, 11.242, 0.02739, -0.00047925),
-    11: ValueSetdTF(1.138, 0.4149, 13.72, 0.02805, -0.00028536),
-    12: ValueSetdTF(1.127, 0.31582, 11.863, 0.03019, -0.00032846),
-    13: ValueSetdTF(1.1179, 0.39999, 16.487, 0.035929, -0.004505),
-    14: ValueSetdTF(1.1103, 0.24283, 8.6548, 0.03594, -0.00032298)
+ValueSetdEMFInv = namedtuple("ValueSetdEMFInv", "def0 t1ef t2ef t3ef t4ef a1ef a2ef a3ef a4ef")
+dEMFInv_DICT = {
+    0: ValueSetdEMFInv(1.0343, 0.088968, 1.7973, 5.4523, 212.16, -0.21388, -0.062395, 0.019185, 0.006374),
+    1: ValueSetdEMFInv(1.034, 0.069244, 1.5863, 5.286, 377.53, -0.2012, -0.063576, 0.015637, -0.010714),
+    2: ValueSetdEMFInv(1.0333, 0.04247, 1.2248, 5.632, 102.52, -0.18355, -0.053807, 0.020978, -0.007918),
+    4: ValueSetdEMFInv(1.0381, 0.007853, 0.29706, 12.873, 36.632, -0.14615, -0.042807, 0.041095, -0.001321),
+    6: ValueSetdEMFInv(0.6746, 0.80586, 2.2704, 9.438, 45.697, -0.20999, -0.04777, 0.04576, -0.00481),
+    7: ValueSetdEMFInv(0.7542, 0.53431, 1.7621, 9.7853, 47.795, -0.27137, -0.04595, 0.05211, -0.00631),
+    8: ValueSetdEMFInv(0.8081, 0.40372, 1.1229, 3.9604, 240.78, -0.31972, -0.11315, 0.01795, -0.00708),
+    9: ValueSetdEMFInv(0.8471, 0.33524, 1.1895, 8.9332, 40.988, -0.32353, -0.06303, 0.059833, -0.001358),
+    10: ValueSetdEMFInv(0.8767, 0.25626, 1.2476, 7.2565, 41.692, -0.28106, -0.06753, 0.04489, 0.000056795),
+    11: ValueSetdEMFInv(0.8998, 0.24002, 1.0709, 4.3649, 55.849, -0.29373, -0.10276, 0.02715, 0.0005721),
+    12: ValueSetdEMFInv(0.9184, 0.20832, 1.1873, 6.0202, 51.346, -0.27723, -0.089841, 0.057657, -0.009586),
+    13: ValueSetdEMFInv(0.9337, 0.20311, 1.1942, 7.4647, 53.164, -0.29323, -0.05229, 0.0341, 0.0056264),
+    14: ValueSetdEMFInv(0.9465, 0.1928, 1.1496, 7.4809, 42.566, -0.28826, -0.07038, 0.05166, -0.00212)
 }
 
-ValueSetdEMR = namedtuple("ValueSetdEMRInv", "der t1er t2er t3er a1er a2er a3er a4er")
-dEMR_DICT = {
-    0: ValueSetdEMR(0.84352, 0.68201, 2.5196, 6.5196, 3.5193, 3.0284, 1.5369, 1.9315),
-    1: ValueSetdEMR(0.16079, 0.97003, 1.97, 5.97, 3.369, 2.8062, 1.7625, 1.9314),
-    2: ValueSetdEMR(5.4852, 0.21484, 2.5712, 7.4783, 3.594, 2.6926, 1.257, 1.9692),
-    4: ValueSetdEMR(0.4005, 0.12652, 2.4127, 16.011, 3.0886, 1.3641, 2.7001, 1.5229),
-    6: ValueSetdEMR(0.1604, 0.61461, 2.8333, 4.4822, 0, 2.4651, 1.2471, 1.9194),
-    7: ValueSetdEMR(0.625, 0.42728, 2.6576, 4.8889, 0, 2.6521, 1.3844, 1.9194),
-    8: ValueSetdEMR(1.5485, 0.33823, 2.9531, 4.5135, 0, 2.7332, 0.78063, 1.9198),
-    9: ValueSetdEMR(3.0872, 0.32215, 2.462, 4.9846, 0, 2.9551, 1.3352, 1.9209),
-    10: ValueSetdEMR(5.3995, 0.23576, 2.7997, 4.8193, 0, 2.7187, 1.0087, 1.926),
-    11: ValueSetdEMR(8.6343, 0.22097, 2.832, 4.8614, 0, 2.7817, 1.0238, 1.9272),
-    12: ValueSetdEMR(12.98, 0.21044, 2.6659, 4.9225, 0, 2.8849, 0.98963, 1.9411),
-    13: ValueSetdEMR(18.533, 0.19399, 2.73, 4.8213, 0, 2.8915, 1.0094, 1.9288),
-    14: ValueSetdEMR(25.495, 0.17475, 2.6817, 4.8485, 0, 2.8823, 1.0067, 1.9338)
+ValueSetdTFInv = namedtuple("ValueSetdTFInv", "dtf t1tf t2tf a1tf a2tf")
+dTFInv_DICT = {
+    0: ValueSetdTFInv(1.0234, 0.03583, 7.9771, 0.03811, -0.00051559),
+    1: ValueSetdTFInv(1.0239, 0.02592, 11.325, 0.03623, -0.00433),
+    2: ValueSetdTFInv(1.0245, 0.01408, 11.053, 0.0336, -0.00503),
+    4: ValueSetdTFInv(1.0239, 0.00537, 0.40537, 0.04366, 0.0024),
+    6: ValueSetdTFInv(1.2614, 0.1, 1.1974, -0.00741, 0.00091974),
+    7: ValueSetdTFInv(1.2227, 3.0116, 19.437, 0.02601, -0.00529),
+    8: ValueSetdTFInv(1.1922, 2.5676, 17.852, 0.03346, -0.00243),
+    9: ValueSetdTFInv(1.1694, 0.83038, 11.955, 0.02713, -0.00035205),
+    10: ValueSetdTFInv(1.1518, 0.47077, 11.242, 0.02739, -0.00047925),
+    11: ValueSetdTFInv(1.138, 0.4149, 13.72, 0.02805, -0.00028536),
+    12: ValueSetdTFInv(1.127, 0.31582, 11.863, 0.03019, -0.00032846),
+    13: ValueSetdTFInv(1.1179, 0.39999, 16.487, 0.035929, -0.004505),
+    14: ValueSetdTFInv(1.1103, 0.24283, 8.6548, 0.03594, -0.00032298)
 }
 
-ValueSetdTR = namedtuple("ValueSetdTRInv", "dtr t1tr t2tr t3tr a1tr a2tr a3tr a4tr")
-dTR_DICT = {
-    0: ValueSetdTR(0.03458, 0.24804, 3.4223, 4.4223, 2.0715, 1.0448, 2.7094, 0.7271),
-    1: ValueSetdTR(0.03838, 0.20222, 3.6594, 4.6594, 2.1888, 1.0786, 2.275, 0.73006),
-    2: ValueSetdTR(0.03936, 0.12993, 2.865, 7.5695, 2.3071, 1.1531, 0.01, 0.83867),
-    4: ValueSetdTR(0.33056, 0.11473, 0.61473, 2.6147, 1.7238, 0.76782, 0.44658, 0.77125),
-    6: ValueSetdTR(0.8868, 0.10014, 1.376, 5.0236, 0, -0.03928, 1.2644, 0.71579),
-    7: ValueSetdTR(0.5204, 0.22901, 1.229, 6.9959, 0, 0.07821, 1.1669, 0.71371),
-    8: ValueSetdTR(0.3368, 0.43989, 2.0375, 4.6312, 0, 0.54803, 1.5622, 0.71316),
-    9: ValueSetdTR(0.2347, 0.40168, 2.5233, 4.5042, 0, 0.65648, 1.8429, 0.719),
-    10: ValueSetdTR(0.1723, 0.3075, 2.6861, 4.5201, 0, 0.6537, 1.9969, 0.71592),
-    11: ValueSetdTR(0.1318, 0.26188, 2.4925, 4.5829, 0, 0.64362, 1.841, 0.72049),
-    12: ValueSetdTR(0.1039, 0.23824, 2.7662, 4.5589, 0, 0.69647, 2.0949, 0.71098),
-    13: ValueSetdTR(0.084, 0.21624, 2.8018, 4.5087, 0, 0.7265, 2.0792, 0.72111),
-    14: ValueSetdTR(0.0693, 0.19662, 2.9253, 4.4577, 0, 0.76016, 2.2472, 0.72422)
+ValueSetdEMRInv = namedtuple("ValueSetdEMRInv", "der t1er t2er t3er a1er a2er a3er a4er")
+dEMRInv_DICT = {
+    0: ValueSetdEMRInv(0.84352, 0.68201, 2.5196, 6.5196, 3.5193, 3.0284, 1.5369, 1.9315),
+    1: ValueSetdEMRInv(0.16079, 0.97003, 1.97, 5.97, 3.369, 2.8062, 1.7625, 1.9314),
+    2: ValueSetdEMRInv(5.4852, 0.21484, 2.5712, 7.4783, 3.594, 2.6926, 1.257, 1.9692),
+    4: ValueSetdEMRInv(0.4005, 0.12652, 2.4127, 16.011, 3.0886, 1.3641, 2.7001, 1.5229),
+    6: ValueSetdEMRInv(0.1604, 0.61461, 2.8333, 4.4822, 0, 2.4651, 1.2471, 1.9194),
+    7: ValueSetdEMRInv(0.625, 0.42728, 2.6576, 4.8889, 0, 2.6521, 1.3844, 1.9194),
+    8: ValueSetdEMRInv(1.5485, 0.33823, 2.9531, 4.5135, 0, 2.7332, 0.78063, 1.9198),
+    9: ValueSetdEMRInv(3.0872, 0.32215, 2.462, 4.9846, 0, 2.9551, 1.3352, 1.9209),
+    10: ValueSetdEMRInv(5.3995, 0.23576, 2.7997, 4.8193, 0, 2.7187, 1.0087, 1.926),
+    11: ValueSetdEMRInv(8.6343, 0.22097, 2.832, 4.8614, 0, 2.7817, 1.0238, 1.9272),
+    12: ValueSetdEMRInv(12.98, 0.21044, 2.6659, 4.9225, 0, 2.8849, 0.98963, 1.9411),
+    13: ValueSetdEMRInv(18.533, 0.19399, 2.73, 4.8213, 0, 2.8915, 1.0094, 1.9288),
+    14: ValueSetdEMRInv(25.495, 0.17475, 2.6817, 4.8485, 0, 2.8823, 1.0067, 1.9338)
 }
+
+ValueSetdTRInv = namedtuple("ValueSetdTRInv", "dtr t1tr t2tr t3tr a1tr a2tr a3tr a4tr")
+dTRInv_DICT = {
+    0: ValueSetdTRInv(0.03458, 0.24804, 3.4223, 4.4223, 2.0715, 1.0448, 2.7094, 0.7271),
+    1: ValueSetdTRInv(0.03838, 0.20222, 3.6594, 4.6594, 2.1888, 1.0786, 2.275, 0.73006),
+    2: ValueSetdTRInv(0.03936, 0.12993, 2.865, 7.5695, 2.3071, 1.1531, 0.01, 0.83867),
+    4: ValueSetdTRInv(0.33056, 0.11473, 0.61473, 2.6147, 1.7238, 0.76782, 0.44658, 0.77125),
+    6: ValueSetdTRInv(0.8868, 0.10014, 1.376, 5.0236, 0, -0.03928, 1.2644, 0.71579),
+    7: ValueSetdTRInv(0.5204, 0.22901, 1.229, 6.9959, 0, 0.07821, 1.1669, 0.71371),
+    8: ValueSetdTRInv(0.3368, 0.43989, 2.0375, 4.6312, 0, 0.54803, 1.5622, 0.71316),
+    9: ValueSetdTRInv(0.2347, 0.40168, 2.5233, 4.5042, 0, 0.65648, 1.8429, 0.719),
+    10: ValueSetdTRInv(0.1723, 0.3075, 2.6861, 4.5201, 0, 0.6537, 1.9969, 0.71592),
+    11: ValueSetdTRInv(0.1318, 0.26188, 2.4925, 4.5829, 0, 0.64362, 1.841, 0.72049),
+    12: ValueSetdTRInv(0.1039, 0.23824, 2.7662, 4.5589, 0, 0.69647, 2.0949, 0.71098),
+    13: ValueSetdTRInv(0.084, 0.21624, 2.8018, 4.5087, 0, 0.7265, 2.0792, 0.72111),
+    14: ValueSetdTRInv(0.0693, 0.19662, 2.9253, 4.4577, 0, 0.76016, 2.2472, 0.72422)
+}
+
 #Min and max radius value at the start and end of the ChevParker Data files
 S0_CHEV_RMIN = {6: 0.90606, 7: 0.93498, 8: 0.95023, 9: 0.95967, 10: 0.96609, 11: 0.97075, 12: 0.97428, 13: 0.97705, 14: 0.97928}
 S0_CHEV_RMAX = {6: 1.25542, 7: 1.18099, 8: 1.15397, 9: 1.13993, 10: 1.13133, 11: 1.12554, 12: 1.12136, 13: 1.11822, 14: 1.11576}
@@ -170,6 +185,7 @@ density2 = lines[:, 2]
 
 
 ##############################################################################################################################
+#=============================================================================================================================
 ##############################################################################################################################
 class SuperNovaRemnant:
     """Calculate and store data for a supernova remnant.
@@ -211,23 +227,29 @@ class SuperNovaRemnant:
 ############################################################################################################################
     def update_output(self):
         """Recalculate and update data, plot, and output values using input values from main window."""
-
+        
+        global MU_H, MU_I, MU_e, MU_t, MU_ratej, MU_tej, MU_I2, MU_e2, MU_Iej, MU_eej
         self.data.update(gui.InputParam.get_values(self.root))
-        self.data["mu_H"] = sum(A_VALS[key] * 10 ** (self.data["abundance"][key] - 12) for key in A_VALS)
-        self.data["mu_e"] = self.data["mu_H"] / sum(Z_VALS[key] * 10 ** (self.data["abundance"][key] - 12)
-                                                    for key in Z_VALS)
+        
         ab_sum = sum(10 ** (self.data["abundance"][key] - self.data["abundance"]["H"]) for key in A_VALS)
+        self.data["mu_H"] = sum(A_VALS[key] * 10 ** (self.data["abundance"][key] - self.data["abundance"]["H"]) for key in A_VALS)
+        self.data["mu_e"] = self.data["mu_H"] / sum(Z_VALS[key] * 10 ** (self.data["abundance"][key] - self.data["abundance"]["H"]) for key in Z_VALS)
         self.data["mu_I"] = self.data["mu_H"] / ab_sum
-        self.data["Z_sq"] = sum(Z_VALS[key] ** 2 * 10 ** (
-            self.data["abundance"][key] - self.data["abundance"]["H"]) for key in A_VALS) / ab_sum
+        self.data["mu_t"] = 1/((1/self.data["mu_I"])+(1/self.data["mu_e"]))
+        self.data["Z_sq"] = sum(Z_VALS[key] ** 2 * 10 ** (self.data["abundance"][key] - self.data["abundance"]["H"]) for key in A_VALS) / ab_sum
+                
         ab_sum_ej = sum(10 ** (self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in A_VALS)
-        self.data["mu_H_ej"] = sum(
-            A_VALS[key] * 10 ** (self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in A_VALS)
-        self.data["mu_e_ej"] = self.data["mu_H_ej"] / sum(
-            Z_VALS[key] * 10 ** (self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in Z_VALS)
+        self.data["mu_H_ej"] = sum(A_VALS[key] * 10 ** (self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in A_VALS)
+        self.data["mu_e_ej"] = self.data["mu_H_ej"] / sum(Z_VALS[key] * 10 ** (self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in Z_VALS)
         self.data["mu_I_ej"] = self.data["mu_H_ej"] / ab_sum_ej
-        self.data["Z_sq_ej"] = sum(Z_VALS[key] ** 2 * 10 ** (
-            self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in A_VALS) / ab_sum_ej
+        self.data["mu_t_ej"] = 1/((1/self.data["mu_I_ej"])+(1/self.data["mu_e_ej"]))
+        self.data["Z_sq_ej"] = sum(Z_VALS[key] ** 2 * 10 ** (self.data["ej_abundance"][key] - self.data["ej_abundance"]["H"]) for key in A_VALS) / ab_sum_ej
+        
+        self.data["mu_ratio"] = (self.data["mu_H"]*self.data["mu_e"])/(self.data["mu_H_ej"]*self.data["mu_e_ej"])
+        
+        MU_H, MU_I, MU_e, MU_t, MU_ratej, MU_tej, MU_I2, MU_e2 = self.data["mu_H"], self.data["mu_I"], self.data["mu_e"], self.data["mu_t"], self.data["mu_ratio"], self.data["mu_t_ej"], self.data["mu_I_ej"], self.data["mu_e_ej"]
+        MU_Iej, MU_eej = MU_I2, MU_e2
+
         # n must be converted to an integer since it is used as a key in the function dictionaries
         self.data["n"] = round(self.data["n"])
         if str(self.widgets["T_ratio"].input.cget("state")) == "readonly" or type(self.data["T_ratio"]) == str:
@@ -330,6 +352,11 @@ class SuperNovaRemnant:
                 output_data["epsi"] = "Fractional energy loss \u03B5: " + str(round(self.calc["epsi"],6))
             else:
                 output_data["epsi"] = ""
+             
+            # Calculate cx to emission measure and temperature graphs
+            #if (self.data["model"] == "standard" and self.data["n"] > 5):
+                #self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
+                                #*(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
                 
             # Check if HLD model is valid with current conditions and change state of radio button accordingly
             if (0.1 * self.calc["t_c"] <= self.calc["t_pds"] and
@@ -389,6 +416,7 @@ class SuperNovaRemnant:
         self.calc["T"] = output_data["T"]  #This T is electron shock temperature
         self.widgets["xmin"].input.config(to=self.calc["t_mrg_final"])
         self.widgets["xmax"].input.config(to=self.calc["t_mrg_final"])
+        
         self.update_plot(phases)
         if (self.widgets["model"].get_value() == "cism" and self.widgets["c_tau"].get_value() == 0):
             gui.OutputValue.update(output_data, self.root, 1, phases)
@@ -398,7 +426,7 @@ class SuperNovaRemnant:
             self.buttons["em"].config(state="normal")
         else:
             self.buttons["em"].config(state="disabled")
-            
+        
 ###########################################################################################################################
     def emissivity_model_exists(self):
         """Check if an emissivity model is available for the current set of input parameters.
@@ -431,6 +459,7 @@ class SuperNovaRemnant:
         plot_data = self.get_plot_data(phases)
         # Clear previous lines
         self.graph.clear_plot()
+        
         # Add data for forward and reverse shocks - radius vs. time or velocity vs. time depending on plot_type
         direction = "forward"
         self.graph.add_data(plot_data[direction]["t"], plot_data[direction][self.data["plot_type"]],
@@ -613,7 +642,6 @@ class SuperNovaRemnant:
 
         return plot_data
 
-
 ###########################################################################################################################
     def get_specific_data(self):
         """Get output values (radius, velocity, and temperature of both shocks) at a specific time.
@@ -683,7 +711,7 @@ class SuperNovaRemnant:
         else:
             output_values = self.GetEMandTempArrays(timeArray)
             return output_values["eMeasf"], output_values["Tempf"], output_values["eMeasr"], output_values["Tempr"]
-
+        
 ##########################################################################################################################
     def GetEMandTempArrays(self, timeArray, output = "tempAndEMeas"):
         """Returns dictionary of output for emission measure and temperature values.
@@ -793,7 +821,7 @@ class SuperNovaRemnant:
         }
         return function_dict[key]
   
-     
+      
 ############################################################################################################################
     def time_array(self, phase):
         """Returns an array of times appropriate for a given phase.
@@ -821,7 +849,7 @@ class SuperNovaRemnant:
         elif phase == "ST":
             t_array = np.linspace(self.calc["t_st"], min(self.calc["t_pds"], self.calc["t_mrg"]["ST"], alt_upper), 1000)
         elif phase == "PDS":
-            t_array = np.linspace(self.calc["t_pds"], min(self.calc["t_mcs"], self.calc["t_mrg"]["PDS"], alt_upper),
+            t_array = np.linspace(self.calc["t_pds"], min(self.calc["t_mcs"], self.calc["t_mrg"]["PDS"], alt_upper), 
                                   10000)
         elif phase == "MCS":
             t_array = np.linspace(self.calc["t_mcs"], self.calc["t_mrg"]["MCS"], 10000)
@@ -917,6 +945,7 @@ class SuperNovaRemnant:
             input_ = np.array(input_)
         output["v"] = self.velocity_functions[self.data["n"], phase](input_)
         return output
+
 
 #########################################################################################################################
     def _s0n0_solution(self, key, phase):
@@ -1650,17 +1679,17 @@ class SuperNovaRemnant:
         Returns:
             dEMF: dEMF value from input parameters
         """
-        self.dEMFcnsts =dEMF_DICT[n]
+        self.dEMFcnsts =dEMFInv_DICT[n]
         self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
                                 *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
         self.calc["RCRf"] = 0
         if (t < self.cnst.t_st):
             self.calc["R0STf"] = self.calc["r_ch"]*self.calc["cx"]*(t)**((self.data["n"]-3)/self.data["n"])
-            self.calc["RCRf"] = self.calc["R0STf"]*PC_TO_KM*10**5 
+            self.calc["RCRf"] = self.calc["R0STf"] # problem
         elif (t >= self.cnst.t_st):
             self.calc["RTMf"] = self.calc["r_ch"]*((self.cnst.r_st**2.5)+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(0.4)
-            self.calc["RCRf"] = self.calc["RTMf"]*PC_TO_KM*10**5
-        self.calc["EM0"] = (16*self.data["n_0"]**2*(MU_H/MU_e)*self.calc["RCRf"]**3)
+            self.calc["RCRf"] = self.calc["RTMf"]
+        self.calc["EM0"] = (0.4*0.473*self.calc["RCRf"]**3)
             
        
         if (t < self.dEMFcnsts.t1ef):
@@ -1683,7 +1712,7 @@ class SuperNovaRemnant:
                                         * ((self.dEMFcnsts.t3ef/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)) 
                                         * ((self.dEMFcnsts.t4ef/self.dEMFcnsts.t3ef)**(self.dEMFcnsts.a3ef))
                                         * ((t/self.dEMFcnsts.t4ef)**(self.dEMFcnsts.a4ef)))
-        return self.calc["EM0"]*dEMF    
+        return self.calc["EM0"]*dEMF*10**58     
             
 
 #######################################################################################################################
@@ -1693,13 +1722,13 @@ class SuperNovaRemnant:
         Returns:
             dTF: dTF value from input parameters
         """
-        self.dTFcnsts = dTF_DICT[n]
+        self.dTFcnsts = dTFInv_DICT[n]
         self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
                                 *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
         self.calc["VCRf"] = 0
         if (t < self.cnst.t_st):
             self.calc["V0STf"] = self.calc["v_ch"]*10**5*((self.data["n"]-3)/self.data["n"])*self.calc["cx"]*(t)**(-3/self.data["n"])
-            self.calc["VCRf"] = self.calc["V0STf"] 
+            self.calc["VCRf"] = self.calc["V0STf"] #problem
         elif (t >= self.cnst.t_st):
             self.calc["VTMf"] = 0.4*((XI_0)**0.5)*self.calc["v_ch"]*10**5*((((self.cnst.r_st)**(2.5))+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(-0.6))
             self.calc["VCRf"] = self.calc["VTMf"]
@@ -1725,18 +1754,18 @@ class SuperNovaRemnant:
         Returns:
             dEMR: dEMR value from input parameters
         """
-        self.dEMRcnsts = dEMR_DICT[n]
+        self.dEMRcnsts = dEMRInv_DICT[n]
         self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
                                 *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
         self.calc["RCRf"] = 0
         if (t < self.cnst.t_st):
             self.calc["R0STf"] = self.calc["r_ch"]*self.calc["cx"]*(t)**((self.data["n"]-3)/self.data["n"])
-            self.calc["RCRf"] = self.calc["R0STf"]*PC_TO_KM*10**5
+            self.calc["RCRf"] = self.calc["R0STf"]
         elif (t >= self.cnst.t_st):
             self.calc["RTMf"] = self.calc["r_ch"]*((self.cnst.r_st**2.5)+(((XI_0)**0.5)*(t-self.cnst.t_st)))**(0.4)
-            self.calc["RCRf"] = self.calc["RTMf"]*PC_TO_KM*10**5
+            self.calc["RCRf"] = self.calc["RTMf"]
             
-        self.calc["EM0"] = (16*self.data["n_0"]**2*(MU_H/MU_e)*self.calc["RCRf"]**3)
+        self.calc["EM0"] = (0.4*0.473*self.calc["RCRf"]**3)
        
         if (t < self.dEMRcnsts.t1er):
            dEMR = self.dEMRcnsts.der * ((t/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a1er))
@@ -1752,7 +1781,7 @@ class SuperNovaRemnant:
             dEMR = (self.dEMRcnsts.der * ((self.dEMRcnsts.t2er/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er)) 
                                         * ((self.dEMRcnsts.t3er/self.dEMRcnsts.t2er)**(-1.0*self.dEMRcnsts.a3er)) 
                                         * ((t/self.dEMRcnsts.t3er)**(-1.0*self.dEMRcnsts.a4er)))
-        return self.calc["EM0"]*dEMR     
+        return self.calc["EM0"]*dEMR*10**58     
             
 
 #######################################################################################################################
@@ -1763,7 +1792,7 @@ class SuperNovaRemnant:
             dTR: dTR value from input parameters
         """
 
-        self.dTRcnsts = dTR_DICT[n]
+        self.dTRcnsts = dTRInv_DICT[n]
         self.calc["cx"] = ((((27*self.cnst.l_ed**(self.data["n"]-2))/(4*np.pi*self.data["n"]*(self.data["n"]-3)*self.cnst.phi_ed))
                                 *(((10*(self.data["n"]-5))/(3*(self.data["n"]-3)))**((self.data["n"]-3)/2)))**(1/self.data["n"]))
         self.calc["VCRf"] = 0
@@ -1793,7 +1822,928 @@ class SuperNovaRemnant:
         return self.calc["T0"]*dTR     
    
        
+       
+##############################################################################################################################
+#=============================================================================================================================
+##############################################################################################################################
+class SuperNovaRemnantInverse:
+    """Calculate and store data for supernova remnant inverse calculations.
+
+    Attributes:
+        root (str): ID of GUI main window, used to access widgets
+        widgets (dict): widgets used for input
+        buttons (dict): emissivity and abundance buttons in program window
+        data (dict): values from input window
+        calc (dict): values calculated from input values
+        graph (snr_gui.TimePlot): plot used to show radius and velocity as functions of time
+        cnst (dict): named tuple of constants used for supernova remnant calculations, used only for s=0
+        radius_functions (dict): functions used to calculate radius as a function of time
+        velocity_functions (dict): functions used to calculate velocity as a function of time or radius
+        time_functions (dict): functions used to calculate time as a function of radius
+    """
+###########################################################################################################################
+    def __init__(self, root):
+        """Initialize SuperNovaRemnant instance.
+
+        Args:
+            root (str): ID of parent window, used to access widgets only from parent
+        """
+
+        self.root = root
+        #self.widgetsInv = gui.InputParam.instances[self.root]
+        self.buttons = {}
+        self.data = {}
+        self.calc = {}
+        # Graph is defined in snr.py module
+        self.graph = None
+        # Constants are defined when an n value is specified
+        self.cnst = None
+        #self.radius_functions = {}
+        #self.velocity_functions = {}
+        #self.time_functions = {}
+        #self._init_functions()
+
+############################################################################################################################
+    def update_output(self):
+
+        self.data.update(gui.InputParam.get_values(self.root))
+            
+        # n must be converted to an integer since it is used as a key in the function dictionaries
+        self.data["n_inv"] = round(self.data["n_inv"])
+        # Calculate phase transition times and all values needed for future radius and velocity calculations.
+        if self.data["s_inv"] == 0:
+            self.cnst = VALUE_DICT_S0[self.data["n_inv"]]
+            phases = self.get_phases()          
+            
+            if (self.data["model_inv"] == "standard_forward"):
+            # Values to be displayed as output, note r and v are added later and rr and vr are updated later if t<t_rev
+                self.calculate_Standard_Forward_values()
+                self.verify_forward_generalT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["tcn_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51c_inv"]*10**51),
+                    "n_0_inv": "ISM number density: " + str(round(self.calc["n0_inv"],4)) + " cm\u207B\u00B3",
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "R_r_out": str(round(self.calc["Rrev_predict"],4)) + " pc",
+                    "t_r_out": str(round(self.calc["Terav_predict"],4)) + " keV",
+                    "EM_r_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EMR_predict"]*10**58),
+                    "Core": "RS Reaches Core: " + str(round(self.calc["tch_inv"]*self.cnst.t_rchg,4)) + " yrs",
+                    "Rev": "RS Reaches Center: " + str(round(self.calc["tch_inv"]*self.cnst.t_rev,4)) + " yrs"
+                }
+                
+            elif (self.data["model_inv"] == "standard_reverse"):
+                self.calculate_Standard_Reverse_values()
+                self.verify_reverse_generalT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["tcn_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51c_inv"]*10**51),
+                    "n_0_inv": "ISM number density: " + str(round(self.calc["n0_inv"],4)) + " cm\u207B\u00B3",
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["TEf_predict"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EMF_predict"]*10**58),
+                    "R_r_out": str(round(self.calc["Rrev_predict"],4)) + " pc",
+                    "t_r_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_r_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "Core": "RS Reaches Core: " + str(round(self.calc["tch_inv"]*self.cnst.t_rchg,4)) + " yrs",
+                    "Rev": "RS Reaches Center: " + str(round(self.calc["tch_inv"]*self.cnst.t_rev,4)) + " yrs"
+                } 
+            elif (self.data["model_inv"] == "cloudy_forward"):
+                self.cloudyCnst = VALUE_DICT_Cloudy[self.data["ctau_inv"]]
+                self.calculate_Cloudy_Forward_values()
+                self.verify_forward_cloudyT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["t_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51_inv"]*10**51),
+                    "n_0_inv": "ISM number density: " + str(round(self.calc["n0_inv"],4)) + " cm\u207B\u00B3",
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "R_r_out": "N/A",
+                    "t_r_out": "N/A",
+                    "EM_r_out": "N/A",
+                    "Core": "This model only has the \nself-similar phase.",
+                    "Rev": "",
+                    "t-s2": ""
+                }
+                
+            else:
+            # Values to be displayed as output, note r and v are added later and rr and vr are updated later if t<t_rev
+                self.calculate_Sedov_Forward_values()
+                self.verify_forward_sedovT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["t_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51_inv"]*10**51),
+                    "n_0_inv": "ISM number density: " + str(round(self.calc["n0_inv"],4)) + " cm\u207B\u00B3",
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "R_r_out": "N/A",
+                    "t_r_out": "N/A",
+                    "EM_r_out": "N/A",
+                    "Core": "This model only has the \nself-similar phase.",
+                    "Rev": "",
+                    "t-s2": ""
+                }
+        
+            
+        else: #s=2 case
+            self.cnst = VALUE_DICT_S2[self.data["n_inv"]]
+            phases = self.get_phases()
+            if (self.data["model_inv"] == "standard_forward"):
+                self.calculate_S2_Standard_Forward_values()
+                self.verify_S2_forward_generalT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["t_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51_inv"]*10**51),
+                    "n_0_inv": "\u1E40/\u00284\u03C0V\u1D65\u1D65\u0029: {:.4e} g/cm".format(self.calc["q_inv"]),
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "R_r_out": str(round(self.calc["Rrev_predict"],4)) + " pc",
+                    "t_r_out": str(round(self.calc["Terav_predict"],4)) + " keV",
+                    "EM_r_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EMR_predict"]*10**58),
+                    "Core": "",
+                    "Rev": "",
+                    "t-s2": "This model only includes the\nejecta-dominated phase \nfor t < tc\u2092\u1D63\u2091."   # Set transition time output value to display message explaining lack of transition times
+                }
+            elif (self.data["model_inv"] == "standard_reverse"):
+                self.calculate_S2_Standard_Reverse_values()
+                self.verify_S2_reverse_generalT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["t_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51_inv"]*10**51),
+                    "n_0_inv": "\u1E40/\u00284\u03C0V\u1D65\u1D65\u0029: {:.4e} g/cm".format(self.calc["q_inv"]),
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["Terav_predict"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EMF_predict"]*10**58),
+                    "R_r_out": str(round(self.calc["Rrev_predict"],4)) + " pc",
+                    "t_r_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_r_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "Core": "",
+                    "Rev": "",
+                    "t-s2": "This model only includes the\nejecta-dominated phase \nfor t < tc\u2092\u1D63\u2091."   # Set transition time output value to display message explaining lack of transition times
+                }
+            else: #Standard Forward
+                self.calculate_S2_Standard_Forward_values()
+                self.verify_S2_forward_generalT_n6to14()
+                output_data = {
+                    "t_inv": "Age: " + str(round(self.calc["t_inv"],4)) + " yrs",
+                    "E51_inv": "Energy: {:.4e} erg".format(self.calc["E51_inv"]*10**51),
+                    "n_0_inv": "\u1E40/\u00284\u03C0V\u1D65\u1D65\u0029: {:.4e} g/cm".format(self.calc["q_inv"]),
+                    "R_f_out": str(round(self.calc["Rs_ver"],4)) + " pc",
+                    "t_f_out": str(round(self.calc["TE_ver"],4)) + " keV",
+                    "EM_f_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EM_ver"]*10**58),
+                    "R_r_out": str(round(self.calc["Rrev_predict"],4)) + " pc",
+                    "t_r_out": str(round(self.calc["Terav_predict"],4)) + " keV",
+                    "EM_r_out": "{:.4e} cm\u207B\u00B3".format(self.calc["EMR_predict"]*10**58),
+                    "Core": "",
+                    "Rev": "",
+                    "t-s2": "This model only includes the\nejecta-dominated phase \nfor t < tc\u2092\u1D63\u2091."   # Set transition time output value to display message explaining lack of transition times
+                }
+            # Change units of m_w and v_w to fit with those used in Truelove and McKee   
+       # output_data.update(self.get_specific_data())
+       
+        gui.OutputValue.update(output_data, self.root, 0, phases)
+
+#######################################################################################################################
+    def outputFile_createLine(self, inputValueDict):
+        
+        self.data.update(inputValueDict)
+            
+        # n must be converted to an integer since it is used as a key in the function dictionaries
+        self.data["n_inv"] = round(self.data["n_inv"])
+        # Calculate phase transition times and all values needed for future radius and velocity calculations.
+        if self.data["s_inv"] == 0:
+            self.cnst = VALUE_DICT_S0[self.data["n_inv"]]
+            #phases = self.get_phases()          
+            
+            if (self.data["model_inv"] == "standard_forward"):
+            # Values to be displayed as output, note r and v are added later and rr and vr are updated later if t<t_rev
+                self.calculate_Standard_Forward_values()
+                self.verify_forward_generalT_n6to14()
+                output_dataline = ("standard_forward," + 
+                    "{:.4e}".format(self.calc["tcn_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51c_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["n0_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["Rrev_predict"]) + "," +
+                    "{:.4e}".format(self.calc["Terav_predict"]) + "," +
+                    "{:.4e}".format(self.calc["EMR_predict"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["tch_inv"]*self.cnst.t_rchg) + "," +
+                    "{:.4e}".format(self.calc["tch_inv"]*self.cnst.t_rev))
+                
+            elif (self.data["model_inv"] == "standard_reverse"):
+                self.calculate_Standard_Reverse_values()
+                self.verify_reverse_generalT_n6to14()
+                output_dataline = ("standard_reverse," + 
+                    "{:.4e}".format(self.calc["tcn_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51c_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["n0_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["TEf_predict"]) + "," +
+                    "{:.4e}".format(self.calc["EMF_predict"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["Rrev_predict"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["tch_inv"]*self.cnst.t_rchg) + "," +
+                    "{:.4e}".format(self.calc["tch_inv"]*self.cnst.t_rev))
+                
+            elif (self.data["model_inv"] == "cloudy_forward"):
+                self.cloudyCnst = VALUE_DICT_Cloudy[self.data["ctau_inv"]]
+                self.calculate_Cloudy_Forward_values()
+                self.verify_forward_cloudyT_n6to14()
+                output_dataline = ("cloudy_forward," + 
+                    "{:.4e}".format(self.calc["t_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["n0_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "N/A" + "," + "N/A" + "," + "N/A" + "," + "N/A" + "," + "N/A")
+                
+            else:
+            # Values to be displayed as output, note r and v are added later and rr and vr are updated later if t<t_rev
+                self.calculate_Sedov_Forward_values()
+                self.verify_forward_sedovT_n6to14()
+                output_dataline = ("sedov," + 
+                    "{:.4e}".format(self.calc["t_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["n0_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "N/A" + "," + "N/A" + "," + "N/A" + "," + "N/A" + "," + "N/A")
+        
+            
+        else: #s=2 case
+            self.cnst = VALUE_DICT_S2[self.data["n_inv"]]
+            #phases = self.get_phases()
+            if (self.data["model_inv"] == "standard_forward"):
+                self.calculate_S2_Standard_Forward_values()
+                self.verify_S2_forward_generalT_n6to14()
+                output_dataline = ("standard_forward," + 
+                    "{:.4e}".format(self.calc["t_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["q_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["Rrev_predict"]) + "," +
+                    "{:.4e}".format(self.calc["Terav_predict"]) + "," +
+                    "{:.4e}".format(self.calc["EMR_predict"]*10**58) + "," +
+                    "N/A" + "," + "N/A")
+                
+            elif (self.data["model_inv"] == "standard_reverse"):
+                self.calculate_S2_Standard_Reverse_values()
+                self.verify_S2_reverse_generalT_n6to14()
+                output_dataline = ("standard_reverse," + 
+                    "{:.4e}".format(self.calc["t_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["q_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["Terav_predict"]) + "," +
+                    "{:.4e}".format(self.calc["EMF_predict"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["Rrev_predict"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "N/A" + "," + "N/A")
+                
+            else: #Standard Forward
+                self.calculate_S2_Standard_Forward_values()
+                self.verify_S2_forward_generalT_n6to14()
+                output_dataline = ("standard_forward," +
+                    "{:.4e}".format(self.calc["t_inv"]) + "," +
+                    "{:.4e}".format(self.calc["E51_inv"]*10**51) + "," +
+                    "{:.4e}".format(self.calc["q_inv"]) + "," +
+                    "{:.4e}".format(self.calc["Rs_ver"]) + "," +
+                    "{:.4e}".format(self.calc["TE_ver"]) + "," +
+                    "{:.4e}".format(self.calc["EM_ver"]*10**58) + "," +
+                    "{:.4e}".format(self.calc["Rrev_predict"]) + "," +
+                    "{:.4e}".format(self.calc["Terav_predict"]) + "," +
+                    "{:.4e}".format(self.calc["EMR_predict"]*10**58) + "," +
+                    "N/A" + "," + "N/A")
+        
+        return output_dataline
+
+#######################################################################################################################
+    def get_phases(self):
+        """Get phases that occur for the current input parameters and update the plot dropdown options accordingly.
+
+        Returns:
+            list: list of phases that occur for given input parameters
+        """
+
+       
+        if self.data["s_inv"] == 2:
+            phases = "s2"
+
+        elif (self.data["model_inv"] == "cloudy_forward"):
+            phases = ("t-MCS")
+            
+        else:
+            phases = ("Core", "Rev", "t-PDS")
+
+        return phases     
+             
+#######################################################################################################################
+    def calculate_Standard_Forward_values(self):
+        
+        self.calc["td_inv"] = (self.cnst.t_rev + self.cnst.t_rchg)/2
+        self.calc["n0_inv"] = (((self.data["EM58_f_inv"]*10**58*MU_e)/(16*self.get_dEMF(self.data["n_inv"], self.calc["td_inv"])*MU_H*((self.data["R_f_inv"]*PC_TO_KM*10**5)**3)))**(0.5))
+        self.calc["Te_inv"] = self.data["Te_f_inv"] * KEV_TO_ERG / BOLTZMANN
+        self.calc["Tes_inv"] = self.calc["Te_inv"] / self.get_dTF(self.data["n_inv"], self.calc["td_inv"])
+        self.calc["Vfs1_inv"] = (((16*BOLTZMANN*3*(self.calc["Tes_inv"]))/(3*MU_t*M_H))**0.5) #cm/s
+        self.calc["E51c_inv"] = 1.0
+        self.calc["tch_inv"] = (((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0)) / ((self.calc["E51c_inv"] * 10 ** 51) ** 0.5) /
+                                ((self.calc["n0_inv"] * MU_H * M_H) ** (1.0 / 3.0)) )/ YR_TO_SEC  
+        self.calc["ty_inv"] = ((0.4*self.data["R_f_inv"]*PC_TO_KM*10**5/(self.calc["Vfs1_inv"])) 
+                                - (self.calc["tch_inv"]*YR_TO_SEC*(((self.cnst.r_st**2.5)/(XI_0**0.5))-self.cnst.t_st)))/YR_TO_SEC #yrs
+        self.calc["E51_inv"] = ((self.calc["n0_inv"]*((self.data["R_f_inv"]/(0.3163))**5))/((self.calc["ty_inv"])**2))/0.27 
+        self.calculate_VCRf(self.calc["n0_inv"], self.calc["ty_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        self.calc["ts_inv"] = (3.0/16.0)*MU_t*M_H/BOLTZMANN*((self.calc["VCRf_inv"]*10**5)**2) #K          
+            
+        self.calc["lnDelf_inv"] = np.log(1.2*(10**5)*0.5*(self.calc["ts_inv"]**1.5)/(2*(self.calc["n0_inv"]**0.5)))
+        self.calc["flf_inv"] = (5*self.calc["lnDelf_inv"]*4*self.calc["n0_inv"]*self.calc["ty_inv"]*YR_TO_SEC)/(3*81*((self.calc["ts_inv"])**1.5)*4)
+        self.calc["geif_inv"] = 1 - 0.97*np.exp(-1.0*((self.calc["flf_inv"])**0.4)*(1+0.3*self.calc["flf_inv"]**0.6))
+        self.calc["TES_inv"] = self.calc["Te_inv"] / self.get_dTF(self.data["n_inv"], (self.calc["ty_inv"]/self.calc["tch_inv"])) #K
+        self.calc["TFS_inv"] = MU_t*self.calc["TES_inv"]*((1/(MU_I*self.calc["geif_inv"]))+(1/MU_e)) #K
+        self.calc["VFS_inv"] = ((16*BOLTZMANN*self.calc["TFS_inv"])/(3*MU_t*M_H))**0.5 #cm/s
+        
+        self.calculate_FCRf(self.calc["n0_inv"], self.calc["ty_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        
+        for x in range (0,11):
+            self.calculate_FCRf(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+        
+       
+#######################################################################################################################
+    def calculate_FCRf(self, n0, ty, E51, n):       
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((E51) * 10 ** 51) ** 0.5 /
+                (n0 * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC # in years
+                 
+        self.calculate_VFSf(n0, ty, E51, n)
+        
+        if (ty >= self.calc["tch_inv"]*self.cnst.t_st):
+            self.calc["tcn_inv"] = ((0.4*self.data["R_f_inv"]*PC_TO_KM*10**5/self.calc["VFS_inv"])-(self.calc["tch_inv"]*YR_TO_SEC*((self.cnst.r_st**2.5/((XI_0)**0.5))-self.cnst.t_st)))/ YR_TO_SEC # in years
+        else:
+            self.calc["tcn_inv"] = (((self.data["n_inv"]-3)*self.data["R_f_inv"]*PC_TO_KM*10**5)/((self.data["n_inv"])*self.calc["VFS_inv"]))/ YR_TO_SEC #in years
+        self.calc["td_inv"] = (self.calc["tcn_inv"]) / self.calc["tch_inv"]
+        self.calc["n0_inv"] = (((self.data["EM58_f_inv"]*10**58*MU_e)/(16*self.get_dEMF(self.data["n_inv"], self.calc["td_inv"])*MU_H*((self.data["R_f_inv"]*PC_TO_KM*10**5)**3)))**(0.5))
+        
+        self.calculate_VFSf(self.calc["n0_inv"], self.calc["tcn_inv"], E51, n)
+        
+        if (self.calc["td_inv"] >= self.cnst.t_st):
+            self.calc["E51c_inv"] = (25/(4*XI_0))*(MU_H*M_H*self.calc["n0_inv"])*(self.calc["VFS_inv"]**2)*((self.data["R_f_inv"]*PC_TO_KM*10**5)**3)/(10**51)
+        else:
+            self.calc["E51c_inv"] = ((((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM)**(5.0/3.0))*((MU_H*M_H*self.calc["n0_inv"])**(-2.0/3.0))/((10**51)*((self.calc["tcn_inv"]* YR_TO_SEC)**2)))*(((self.data["R_f_inv"]*PC_TO_KM*10**5)/(self.calc["cx_inv"]*self.calc["rch_inv"] * PC_TO_KM * 10 ** 5))**((2*n)/(n-3))))
+
+
+#######################################################################################################################
+    def calculate_VFSf(self, n0, ty, E51, n):       
+        self.calculate_geif(n0, ty, E51, n)
+        self.calc["TES_inv"] = self.calc["Te_inv"] / self.get_dTF(n, (ty/self.calc["tch_inv"])) #K
+        self.calc["TFS_inv"] = MU_t*self.calc["TES_inv"]*((1/(MU_I*self.calc["geif_inv"]))+(1/MU_e)) #K
+        self.calc["VFS_inv"] = ((16*BOLTZMANN*self.calc["TFS_inv"])/(3*MU_t*M_H))**0.5 #cm/s
+        
+#######################################################################################################################
+    def calculate_geif(self, n0, ty, E51, n):       
+        self.calculate_VCRf(n0, ty, E51, n)
+        self.calc["ts_inv"] = (3.0/16.0)*MU_t*M_H/BOLTZMANN*((self.calc["VCRf_inv"]*10**5)**2) #K
+        self.calc["lnDelf_inv"] = np.log(1.2*(10**5)*0.5*(self.calc["ts_inv"]**1.5)/(2*(n0**0.5)))
+        self.calc["flf_inv"] = (5*self.calc["lnDelf_inv"]*4*n0*ty*YR_TO_SEC)/(3*81*((self.calc["ts_inv"])**1.5)*4)
+        self.calc["geif_inv"] = 1 - 0.97*np.exp(-1.0*((self.calc["flf_inv"])**0.4)*(1+0.3*self.calc["flf_inv"]**0.6))
+
+#######################################################################################################################
+    def calculate_VCRf(self, n0, ty, E51, n):       
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((E51) * 10 ** 51) ** 0.5 /
+                (n0 * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC      # in years
+        self.calc["rch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM / (n0 * MU_H * M_H)) ** (1.0 / 3.0)) / PC_TO_KM / 10 ** 5 # in parsecs
+        self.calc["cx_inv"] = ((((27*self.cnst.l_ed**(n-2))/(4*np.pi*n*(n-3)*self.cnst.phi_ed))
+                                *(((10*(n-5))/(3*(n-3)))**((n-3)/2.0)))**(1.0/n))
+        self.calc["vch_inv"] = self.calc["rch_inv"] / self.calc["tch_inv"] * PCyr_TO_KMs #km/s
+        self.calc["v0STf_inv"] = self.calc["vch_inv"] * ((n - 3)/n) * self.calc["cx_inv"] * ((ty/self.calc["tch_inv"])**(-3/n))
+        self.calc["vTMf_inv"] = 0.4*((XI_0)**0.5)*self.calc["vch_inv"]*((((self.cnst.r_st)**(2.5))+(((XI_0)**0.5)*((ty/self.calc["tch_inv"])-self.cnst.t_st)))**(-0.6))
+        if((ty/self.calc["tch_inv"])<(self.cnst.t_st)):
+            self.calc["VCRf_inv"] = self.calc["v0STf_inv"]
+        elif((ty/self.calc["tch_inv"])>=(self.cnst.t_st)):
+            self.calc["VCRf_inv"] = self.calc["vTMf_inv"] #km/s
+            
+#######################################################################################################################
+    def calculate_VCRr(self, n0, ty, E51, n):  
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((E51) * 10 ** 51) ** 0.5 /
+                (n0 * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC      # in years
+        self.calc["rch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM / (n0 * MU_H * M_H)) ** (1.0 / 3.0)) / PC_TO_KM / 10 ** 5 # in parsecs
+        self.calc["cx_inv"] = ((((27*self.cnst.l_ed**(n-2))/(4*np.pi*n*(n-3)*self.cnst.phi_ed))
+                                *(((10*(n-5))/(3*(n-3)))**((n-3)/2.0)))**(1.0/n))
+        self.calc["vch_inv"] = self.calc["rch_inv"] / self.calc["tch_inv"] * PCyr_TO_KMs #km/s
+        self.calc["v0STf_inv"] = self.calc["vch_inv"] * ((n - 3)/n) * self.calc["cx_inv"] * ((ty/self.calc["tch_inv"])**(-3/n))
+        self.calc["v0CR_inv"] = self.calc["v0STf_inv"]*(3/((n-3)*self.cnst.l_ed))
+        self.calc["vTr_inv"] = self.calc["vch_inv"] * (self.cnst.v_rchg+self.cnst.a_rchg*((ty/self.calc["tch_inv"])-(self.cnst.t_rchg)))
+        if((ty/self.calc["tch_inv"])<(self.cnst.t_rchg)):
+            self.calc["VCRr_inv"] = self.calc["v0CR_inv"]
+        elif((ty/self.calc["tch_inv"])>=(self.cnst.t_rchg)):
+            self.calc["VCRr_inv"] = self.calc["vTr_inv"] #km
+            
+#######################################################################################################################
+    def calculate_RCRf(self, n0, ty, E51, n):       
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((E51) * 10 ** 51) ** 0.5 /
+                (n0 * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC      # in years
+        self.calc["rch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM / (n0 * MU_H * M_H)) ** (1.0 / 3.0)) # in kms
+        self.calc["cx_inv"] = ((((27*self.cnst.l_ed**(n-2))/(4*np.pi*n*(n-3)*self.cnst.phi_ed))
+                                *(((10*(n-5))/(3*(n-3)))**((n-3)/2.0)))**(1.0/n))
+        self.calc["r0STf_inv"] = self.calc["rch_inv"] * self.calc["cx_inv"] * ((ty/self.calc["tch_inv"])**((n-3)/n))
+        self.calc["rTMf_inv"] = self.calc["rch_inv"]*((((self.cnst.r_st)**(2.5))+(((XI_0)**0.5)*((ty/self.calc["tch_inv"])-self.cnst.t_st)))**(0.4))
+        if((ty/self.calc["tch_inv"])<(self.cnst.t_st)):
+            self.calc["RCRf_inv"] = self.calc["r0STf_inv"]
+        elif((ty/self.calc["tch_inv"])>=(self.cnst.t_st)):
+            self.calc["RCRf_inv"] = self.calc["rTMf_inv"] #km 
+            
+#######################################################################################################################
+    def calculate_RCRr(self, n0, ty, E51, n):       
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((E51) * 10 ** 51) ** 0.5 /
+                (n0 * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC      # in years
+        self.calc["rch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM / (n0 * MU_H * M_H)) ** (1.0 / 3.0)) / PC_TO_KM / 10 ** 5 # in parsecs
+        self.calc["cx_inv"] = ((((27*self.cnst.l_ed**(n-2))/(4*np.pi*n*(n-3)*self.cnst.phi_ed))
+                                *(((10*(n-5))/(3*(n-3)))**((n-3)/2.0)))**(1.0/n))
+        self.calc["vch_inv"] = self.calc["rch_inv"] / self.calc["tch_inv"] * PCyr_TO_KMs #km/s
+        self.calc["r0STf_inv"] = self.calc["rch_inv"] * PC_TO_KM * self.calc["cx_inv"] * ((ty/self.calc["tch_inv"])**((n-3)/n)) #km
+        self.calc["r0Cr_inv"] = self.calc["r0STf_inv"] / self.cnst.l_ed
+        self.calc["rTr_inv"] = self.calc["vch_inv"] * ty * YR_TO_SEC * ((self.cnst.r_rchg/self.cnst.t_rchg)-(self.cnst.a_rchg*((ty/self.calc["tch_inv"])-(self.cnst.t_rchg)))-((self.cnst.v_rchg-self.cnst.a_rchg*self.cnst.t_rchg)*np.log(ty/(self.calc["tch_inv"]*self.cnst.t_rchg))))
+        if((ty/self.calc["tch_inv"])<(self.cnst.t_rchg)):
+            self.calc["RCRr_inv"] = self.calc["r0Cr_inv"]
+        elif((ty/self.calc["tch_inv"])>=(self.cnst.t_rchg)):
+            self.calc["RCRr_inv"] = self.calc["rTr_inv"] # in kms
+     
+#######################################################################################################################
+    def verify_forward_generalT_n6to14(self):
+        self.calc["td_inv"] = (self.calc["tcn_inv"]) / self.calc["tch_inv"]
+        self.calculate_RCRf(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+        self.calc["Rs_ver"] = self.calc["RCRf_inv"]
+        self.calc["EM_ver"]=16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.get_dEMF(self.data["n_inv"],self.calc["td_inv"])*((self.calc["Rs_ver"])**3)
+        
+        self.calculate_VCRf(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+        self.calc["ts_inv"] = (3.0/16.0)*MU_t*M_H/BOLTZMANN*((self.calc["VCRf_inv"]*10**5)**2) #K
+        self.calc["lnDelf_inv"] = np.log(1.2*(10**5)*0.5*(self.calc["ts_inv"]**1.5)/(2*(self.calc["n0_inv"]**0.5)))
+        self.calc["flf_inv"] = (5*self.calc["lnDelf_inv"]*4*self.calc["n0_inv"]*self.calc["tcn_inv"]*YR_TO_SEC)/(3*81*((self.calc["ts_inv"])**1.5)*4)
+        self.calc["geif_inv"] = 1 - 0.97*np.exp(-1.0*((self.calc["flf_inv"])**0.4)*(1+0.3*self.calc["flf_inv"]**0.6))
+        self.calc["TeS_ver"] = self.calc["ts_inv"]/MU_t/((1/(MU_I*self.calc["geif_inv"]))+(1/MU_e)) #K
+        self.calc["TE_ver"] = self.calc["TeS_ver"]*self.get_dTF(self.data["n_inv"], self.calc["td_inv"])
+        
+        self.calc["EMR_predict"] = MU_ratej*16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.get_dEMR(self.data["n_inv"],self.calc["td_inv"])*((self.calc["Rs_ver"])**3)
+        self.calc["Trav_predict"] = (MU_tej/MU_t)*self.calc["ts_inv"]*self.get_dTR(self.data["n_inv"], self.calc["td_inv"])
+        self.calc["Terav_predict"] = self.calc["Trav_predict"]/MU_tej/((1/(MU_Iej*self.calc["geif_inv"]))+(1/MU_eej))
+        self.calc["Rrev_predict"] = 0
+        if((self.calc["tcn_inv"])<(self.calc["tch_inv"]*self.cnst.t_rev)):
+            self.calculate_RCRr(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+            self.calc["Rrev_predict"] = self.calc["RCRr_inv"]
+            
+        self.calc["Rs_ver"] = self.calc["Rs_ver"]/PC_TO_KM/10**5
+        self.calc["EM_ver"] = self.calc["EM_ver"] /10**58
+        self.calc["TE_ver"] = self.calc["TE_ver"]/KEV_TO_ERG*BOLTZMANN
+        
+        self.calc["Terav_predict"] = self.calc["Terav_predict"]/KEV_TO_ERG*BOLTZMANN
+        self.calc["EMR_predict"] = self.calc["EMR_predict"]/10**58
+        self.calc["Rrev_predict"] = self.calc["Rrev_predict"]/PC_TO_KM
+        
+#######################################################################################################################        
+#######################################################################################################################
+    def calculate_Standard_Reverse_values(self):
+        
+        self.calc["td_inv"] = (self.cnst.t_rev + self.cnst.t_rchg)/2
+        self.calc["n0_inv"] = (((self.data["EM58_f_inv"]*10**58*MU_e)/(MU_ratej*16*self.get_dEMR(self.data["n_inv"], self.calc["td_inv"])*MU_H*((self.data["R_f_inv"]*PC_TO_KM*10**5)**3)))**(0.5))
+        self.calc["E51c_inv"] = 1.0
+        self.calc["tch_inv"] = (((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0)) / ((self.calc["E51c_inv"] * 10 ** 51) ** 0.5) /
+                                ((self.calc["n0_inv"] * MU_H * M_H) ** (1.0 / 3.0)) )/ YR_TO_SEC         
+        self.calc["Te_inv"] = self.data["Te_f_inv"] * KEV_TO_ERG / BOLTZMANN
+        self.calculate_geif(self.calc["n0_inv"], self.calc["tch_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+        
+        self.calc["Tr_inv"] = self.calc["Te_inv"]*MU_tej*((1/(MU_Iej*self.calc["geif_inv"]))+(1/MU_eej))
+        self.calc["Tfs1_inv"] = (self.calc["Tr_inv"]*MU_t) / (self.get_dTR(self.data["n_inv"], self.calc["td_inv"])*MU_tej)
+        self.calc["Vfs1_inv"] = (((16*BOLTZMANN*(self.calc["Tfs1_inv"]))/(3*MU_t*M_H))**0.5) #cm/s
+        
+        self.calc["ts_inv"] = ((0.4*self.data["R_f_inv"]*PC_TO_KM*10**5/(self.calc["Vfs1_inv"])) 
+                                - (self.calc["tch_inv"]*YR_TO_SEC*(((self.cnst.r_st**2.5)/(XI_0**0.5))-self.cnst.t_st)))/YR_TO_SEC #yrs
+        self.calc["ty_inv"] = self.calc["ts_inv"]
+        self.calc["E51_inv"] = ((self.calc["n0_inv"]*((self.data["R_f_inv"]/(0.3163))**5))/((self.calc["ty_inv"])**2))/0.27 ##WHATS UP WITH THE UNITS HERE?!?!
+        
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((self.calc["E51_inv"]) * 10 ** 51) ** 0.5 /
+                (self.calc["n0_inv"] * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC      # in years
+        self.calculate_VFSr(self.calc["n0_inv"], self.calc["ty_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        self.calculate_FCRr(self.calc["n0_inv"], self.calc["ty_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        
+        for x in range (0,39):
+            self.calculate_FCRr(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+#######################################################################################################################
+    def calculate_VFSr(self, n0, ty, E51, n):       
+        self.calculate_geif(n0, ty, E51, n)
+        self.calc["Tr_inv"] = self.calc["Te_inv"]*MU_tej*((1/(MU_Iej*self.calc["geif_inv"]))+(1/MU_eej))
+        self.calc["TFS_inv"] = (self.calc["Tr_inv"]*MU_t) / (self.get_dTR(self.data["n_inv"], self.calc["td_inv"])*MU_tej)
+        self.calc["VFS_inv"] = ((16*BOLTZMANN*self.calc["TFS_inv"])/(3*MU_t*M_H))**0.5 #cm/s
+        
+#######################################################################################################################
+    def calculate_FCRr(self, n0, ty, E51, n):       
+        self.calc["tch_inv"] = ((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM) ** (5.0 / 6.0) / ((E51) * 10 ** 51) ** 0.5 /
+                (n0 * MU_H * M_H) ** (1.0 / 3.0) )/ YR_TO_SEC # in years
+        #print(self.calc["tch_inv"])
+                 
+        self.calculate_VFSr(n0, ty, E51, n)
+        
+        if (ty >= self.calc["tch_inv"]*self.cnst.t_st):
+            self.calc["tcn_inv"] = ((0.4*self.data["R_f_inv"]*PC_TO_KM*10**5/self.calc["VFS_inv"])-(self.calc["tch_inv"]*YR_TO_SEC*((self.cnst.r_st**2.5/((XI_0)**0.5))-self.cnst.t_st)))/ YR_TO_SEC # in years
+        else:
+            self.calc["tcn_inv"] = (((self.data["n_inv"]-3)*self.data["R_f_inv"]*PC_TO_KM*10**5)/((self.data["n_inv"])*self.calc["VFS_inv"]))/ YR_TO_SEC #in years
+        self.calc["td_inv"] = (self.calc["tcn_inv"]) / self.calc["tch_inv"]
+        self.calc["n0_inv"] = (((self.data["EM58_f_inv"]*10**58*MU_e)/(MU_ratej*16*self.get_dEMR(self.data["n_inv"], self.calc["td_inv"])*MU_H*((self.data["R_f_inv"]*PC_TO_KM*10**5)**3)))**(0.5))
+        
+        self.calculate_VFSr(self.calc["n0_inv"], self.calc["tcn_inv"], E51, n)
+        
+        if (self.calc["td_inv"] >= self.cnst.t_st):
+            self.calc["E51c_inv"] = (25/(4*XI_0))*(MU_H*M_H*self.calc["n0_inv"])*(self.calc["VFS_inv"]**2)*((self.data["R_f_inv"]*PC_TO_KM*10**5)**3)/(10**51)
+        else:
+            self.calc["E51c_inv"] = ((((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM)**(5.0/3.0))*((MU_H*M_H*self.calc["n0_inv"])**(-2.0/3.0))/((10**51)*((self.calc["tcn_inv"]* YR_TO_SEC)**2)))*(((self.data["R_f_inv"]*PC_TO_KM*10**5)/(self.calc["cx_inv"]*self.calc["rch_inv"] * PC_TO_KM * 10 ** 5))**((2*n)/(n-3))))
+
+#######################################################################################################################
+    def verify_reverse_generalT_n6to14(self):
+        self.calc["td_inv"] = (self.calc["tcn_inv"]) / self.calc["tch_inv"]
+        self.calculate_RCRf(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+        self.calc["Rs_ver"] = self.calc["RCRf_inv"]
+        self.calc["EM_ver"]=MU_ratej*16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.get_dEMR(self.data["n_inv"],self.calc["td_inv"])*((self.calc["Rs_ver"])**3)
+        
+        self.calculate_VCRf(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+        self.calc["ts_inv"] = (3.0/16.0)*MU_t*M_H/BOLTZMANN*((self.calc["VCRf_inv"]*10**5)**2) #K
+        self.calc["lnDelf_inv"] = np.log(1.2*(10**5)*0.5*(self.calc["ts_inv"]**1.5)/(2*(self.calc["n0_inv"]**0.5)))
+        self.calc["flf_inv"] = (5*self.calc["lnDelf_inv"]*4*self.calc["n0_inv"]*self.calc["tcn_inv"]*YR_TO_SEC)/(3*81*((self.calc["ts_inv"])**1.5)*4)
+        self.calc["geif_inv"] = 1 - 0.97*np.exp(-1.0*((self.calc["flf_inv"])**0.4)*(1+0.3*self.calc["flf_inv"]**0.6))
+        
+        self.calc["Tfs_inv"] = (self.calc["Tr_inv"]*MU_t) / (self.get_dTR(self.data["n_inv"], self.calc["td_inv"])*MU_tej)
+        self.calc["TR_inv"] = (MU_tej/MU_t) * self.calc["Tfs_inv"] * self.get_dTR(self.data["n_inv"], self.calc["td_inv"])
+        self.calc["TeR_inv"] = (self.calc["TR_inv"]/MU_tej)/((1/(MU_Iej*self.calc["geif_inv"]))+(1/MU_eej))
+        self.calc["TefS_inv"] = (self.calc["Tfs_inv"]/MU_t)/((1/(MU_I*self.calc["geif_inv"]))+(1/MU_e))
+        
+        self.calc["TfSav_predict"] = self.calc["Tfs_inv"] *self.get_dTF(self.data["n_inv"], self.calc["td_inv"])
+        self.calc["EMF_predict"] = 16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.get_dEMF(self.data["n_inv"],self.calc["td_inv"])*((self.calc["Rs_ver"])**3) 
+        self.calc["TEf_predict"] = self.calc["TefS_inv"] * self.get_dTF(self.data["n_inv"], self.calc["td_inv"])
+        self.calc["Rrev_predict"] = 0
+        if((self.calc["tcn_inv"])<(self.calc["tch_inv"]*self.cnst.t_rev)):
+            self.calculate_RCRr(self.calc["n0_inv"], self.calc["tcn_inv"], self.calc["E51c_inv"], self.data["n_inv"])
+            self.calc["Rrev_predict"] = self.calc["RCRr_inv"]
+            
+        self.calc["Rs_ver"] = self.calc["Rs_ver"]/PC_TO_KM/10**5
+        self.calc["EM_ver"] = self.calc["EM_ver"] /10**58
+        self.calc["TE_ver"] = self.calc["TeR_inv"]/KEV_TO_ERG*BOLTZMANN
+        
+        self.calc["TEf_predict"] = self.calc["TEf_predict"]/KEV_TO_ERG*BOLTZMANN
+        self.calc["EMF_predict"] = self.calc["EMF_predict"]/10**58
+        self.calc["Rrev_predict"] = self.calc["Rrev_predict"]/PC_TO_KM
+
+#######################################################################################################################        
+#######################################################################################################################
+    def calculate_S2_Standard_Forward_values(self):
+        self.calc["Te_inv"] = self.data["Te_f_inv"] * KEV_TO_ERG / BOLTZMANN
+        self.calc["Rs_inv"] = self.data["R_f_inv"]*PC_TO_KM*10**5
+        self.calc["Mej_inv"] = self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM
+        self.calc["EM_inv"] = self.data["EM58_f_inv"]*10**58
+        self.calc["vw_inv"] = 30
+        self.calc["kmcm"] = 10**5
+        self.calc["t_inv"] = 300*YR_TO_SEC
+        self.calc["E51_inv"] = 1.0
+        
+        self.calc["q_inv"] = ((self.calc["Rs_inv"]*self.calc["EM_inv"]*MU_e*MU_H*(M_H**2))/(16*self.cnst.dEMf2))**0.5
+        self.calculate_Vfs2(self.calc["t_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        
+        self.calc["CC1_inv"] = ((1 - (3/self.data["n_inv"]))*self.calc["Mej_inv"])/((4/3)*np.pi*((self.calc["q_inv"]/self.cnst.a2)*((self.calc["Rs_inv"]/self.cnst.bbm)**(self.data["n_inv"]-2))))
+        self.calc["CC2_inv"] = (3*(self.data["n_inv"]-3)*((self.calc["CC1_inv"])**(2/(3-self.data["n_inv"]))))/((10**18)*10*(self.data["n_inv"]-5))
+        
+        self.calc["t_inv"] = ((self.data["n_inv"]-3)*self.calc["Rs_inv"])/((self.data["n_inv"]-2)*self.calc["Vfs_inv"])
+        self.calc["E51_inv"] = (self.calc["Mej_inv"]*self.calc["CC2_inv"]*(self.calc["t_inv"]**(-2)))/(10**33)
+        
+        for x in range (0,10):
+            self.calculate_FS2_inv(self.calc["t_inv"], self.calc["E51_inv"], self.data["n_inv"])
+            
+#######################################################################################################################
+    def calculate_FS2_inv(self, ty, E51, n):
+        self.calculate_Vfs2(ty, E51, n)
+        self.calc["t_inv"] = ((n-3)/(n-2))*(self.calc["Rs_inv"]/self.calc["Vfs_inv"])
+        self.calc["E51_inv"] = self.calc["Mej_inv"]*self.calc["CC2_inv"]*(self.calc["t_inv"]**(-2))/(10**33)
+
+#######################################################################################################################
+    def calculate_Vfs2(self, ty, E51, n):
+        
+        #self.calc["Rch2_inv"] = (0.1*12.9*(PC_TO_KM*10**5)*(self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM))/(4*np.pi*(10**5)*YR_TO_SEC*self.calc["q_inv"]*self.calc["kmcm"]) #cm
+        #self.calc["tch2_inv"] = (0.1*1770/(10**5))*((E51)**(-0.5))*(((self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM)**1.5)/(SOLAR_MASS_TO_GRAM**0.5))*(1/(4*np.pi*self.calc["q_inv"]*self.calc["kmcm"])) #s
+        #self.calc["vcor2_inv"] = ((10*(self.data["n_inv"]-5))/(3*(self.data["n_inv"]-3)))**(0.5)
+        #self.calc["tcor2_inv"] = (3/(self.cnst.phi_ed*4*np.pi*(self.data["n_inv"]-3)*self.data["n_inv"]))*(((3*(self.data["n_inv"]-3))/(10*(self.data["n_inv"]-5)))**(0.5))
+        #self.calc["tcon_inv"] = ((((self.data["n_inv"]-3)/(self.data["n_inv"]-2))*((2*np.pi*0.75)**(0.5)))**((2*(self.data["n_inv"]-2))/(5-self.data["n_inv"])))*((self.calc["vcor2_inv"]*self.cnst.l_ed)**((3*(self.data["n_inv"]-2))/(5-self.data["n_inv"])))*((self.calc["tcor2_inv"])**(3/(5-self.data["n_inv"])))
+
+        #self.calc["Vb2t_inv"] = 0
+        #if(ty < (self.calc["tch2_inv"] * self.calc["tcon_inv"])):
+        #    self.calc["Rbn2_inv"] = self.calc["Rch2_inv"]*(((3*((self.cnst.l_ed)**(self.data["n_inv"]-2))*((self.calc["vcor2_inv"])**(self.data["n_inv"]-3)))/(self.cnst.phi_ed*4*np.pi*self.data["n_inv"]*(self.data["n_inv"]-3)))**(1/(self.data["n_inv"]-2)))*((ty/self.calc["tch2_inv"])**((self.data["n_inv"]-3)/(self.data["n_inv"]-2)))
+        #    self.calc["Vbn2_inv"] = ((self.data["n_inv"]-3)*self.calc["Rbn2_inv"])/((self.data["n_inv"]-2)*ty)
+        #    self.calc["Vb2t_inv"] = self.calc["Vbn2_inv"]
+        #else:
+        #    self.calc["Rb2a_inv"] = self.calc["Rch2_inv"]*((((((3*((self.cnst.l_ed)**(self.data["n_inv"]-2)))/(self.cnst.phi_ed*4*np.pi*self.data["n_inv"]*(self.data["n_inv"]-3)))*((self.calc["tcon_inv"]*self.calc["vcor2_inv"])**(self.data["n_inv"]-3)))**(1.5/(self.data["n_inv"]-2)))+(((1.5/np.pi)**(0.5))*((ty/self.calc["tch2_inv"])-self.calc["tcon_inv"])))**(2/3))
+        #    self.calc["Vb2a_inv"] = ((self.data["n_inv"]-3)*self.calc["Rb2a_inv"])/((self.data["n_inv"]-2)*ty)
+        #    self.calc["Vb2t_inv"] = self.calc["Vb2a_inv"]
+            
+        #self.calc["Ts2_inv"] = (3/16)*MU_t*(M_H/BOLTZMANN)*(self.calc["Vb2t_inv"]**2)
+        
+        self.calc["gc_inv"] = ((1-(3/n))*self.calc["Mej_inv"])/(((4*np.pi)/3)*(((E51*(10**51)*10*(n-5))/(self.calc["Mej_inv"]*3*(n-3)))**((3-n)/2)))
+        self.calc["RC_inv"] = (self.cnst.a2*self.calc["gc_inv"]/self.calc["q_inv"])**(1/(n-2))
+        self.calc["Vf2_inv"] = ((n-3)/(n-2))*self.calc["RC_inv"]*self.cnst.bbm*((self.calc["t_inv"])**(-1/(n-2)))
+        self.calc["Ts2_inv"] = (3/16)*MU_t*(M_H/BOLTZMANN)*(self.calc["Vf2_inv"]**2)
+        self.calc["n2_inv"] = (8*self.calc["q_inv"])/(MU_e*M_H*(self.calc["Rs_inv"]**2))
+        self.calc["lnLambda2_inv"] = np.log(1.2*(10**5)*0.5*(self.calc["Ts2_inv"]**1.5)/(2*(self.calc["n2_inv"]**0.5)))
+        self.calc["fl2_inv"] = (5*self.calc["lnLambda2_inv"]*4*self.calc["n2_inv"]*self.calc["t_inv"])/(3*81*((self.calc["Ts2_inv"])**1.5)*4)
+        self.calc["gei2_inv"] = 1 - 0.97*np.exp(-1.0*((self.calc["fl2_inv"])**0.4)*(1+0.3*self.calc["fl2_inv"]**0.6))
+        if(self.data["model_inv"] == "standard_forward"):
+            self.calc["Tfs_inv"] = ((self.calc["Te_inv"]/self.cnst.dTf2)*MU_t)*((1/(MU_I*self.calc["gei2_inv"]))+(1/MU_e))
+        elif(self.data["model_inv"] == "standard_reverse"):
+            self.calc["Tfs_inv"] = ((self.calc["Te_inv"]/self.cnst.dTr2)*MU_t)*((1/(MU_Iej*self.calc["gei2_inv"]))+(1/MU_eej))
+        self.calc["Vfs_inv"] = ((16*BOLTZMANN*self.calc["Tfs_inv"])/(3*MU_t*M_H))**0.5
+        
+#######################################################################################################################
+    def verify_S2_forward_generalT_n6to14(self):
+        
+        self.calc["gc_inv"] = ((1-(3/self.data["n_inv"]))*self.calc["Mej_inv"])/(((4*np.pi)/3)*(((self.calc["E51_inv"]*(10**51)*10*(self.data["n_inv"]-5))/(self.calc["Mej_inv"]*3*(self.data["n_inv"]-3)))**((3-self.data["n_inv"])/2)))
+        self.calc["RC_inv"] = (self.cnst.a2*self.calc["gc_inv"]/self.calc["q_inv"])**(1/(self.data["n_inv"]-2))
+        self.calc["Rf2_inv"] = self.calc["RC_inv"] * self.cnst.bbm * ((self.calc["t_inv"])**((self.data["n_inv"]-3)/(self.data["n_inv"]-2)))
+        self.calc["Rs_ver"] = self.calc["Rf2_inv"]
+        self.calc["EM_ver"] = (self.cnst.dEMf2*16*(self.calc["q_inv"]**2))/(MU_e*MU_H*M_H*M_H*self.calc["Rs_ver"])
+        self.calc["TE_ver"] = (self.calc["Ts2_inv"]*self.cnst.dTf2/MU_t)*(((1/(MU_I*self.calc["gei2_inv"]))+(1/MU_e))**(-1))
+        self.calc["EMR_predict"] = MU_ratej*16*(((self.calc["q_inv"])**2)*self.cnst.dEMr2)/(self.calc["Rs_ver"]*MU_e*MU_H*M_H*M_H)
+        self.calc["Trav_predict"] = (MU_tej/MU_t)*self.calc["Ts2_inv"]*self.cnst.dTr2
+        self.calc["Terav_predict"] = self.calc["Trav_predict"]/MU_tej/((1/(MU_Iej*self.calc["gei2_inv"]))+(1/MU_eej))
+        self.calc["Rrev_predict"] = self.calc["Rf2_inv"]/self.cnst.l_ed
+        
+        self.calc["Rs_ver"] = self.calc["Rs_ver"]/PC_TO_KM/10**5
+        self.calc["EM_ver"] = self.calc["EM_ver"] /10**58
+        self.calc["TE_ver"] = self.calc["TE_ver"]/KEV_TO_ERG*BOLTZMANN
+        
+        self.calc["Terav_predict"] = self.calc["Terav_predict"]/KEV_TO_ERG*BOLTZMANN
+        self.calc["EMR_predict"] = self.calc["EMR_predict"]/10**58
+        self.calc["Rrev_predict"] = self.calc["Rrev_predict"]/PC_TO_KM/10**5
+        
+        self.calc["t_inv"] = self.calc["t_inv"]/YR_TO_SEC
+        
+#######################################################################################################################
+#######################################################################################################################
+    def calculate_S2_Standard_Reverse_values(self):
+        self.calc["Te_inv"] = self.data["Te_f_inv"] * KEV_TO_ERG / BOLTZMANN
+        self.calc["Rs_inv"] = self.data["R_f_inv"]*PC_TO_KM*10**5
+        self.calc["Mej_inv"] = self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM
+        self.calc["EM_inv"] = self.data["EM58_f_inv"]*10**58
+        self.calc["vw_inv"] = 30
+        self.calc["kmcm"] = 10**5
+        self.calc["t_inv"] = 300*YR_TO_SEC
+        self.calc["E51_inv"] = 1.0
+        #self.calc["EM_ver"]=MU_ratej*16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.get_dEMR(self.data["n_inv"],self.calc["td_inv"])*((self.calc["Rs_inv"])**3)
+        ##Supposed to be EMr below here, but no EMr known.
+        self.calc["q_inv"] = ((self.calc["Rs_inv"]*self.calc["EM_inv"]*MU_e*MU_H*(M_H**2))/(16*MU_ratej*self.cnst.dEMr2))**0.5
+        #self.calc["q_inv"] = 1.32964 * 10**13
+        self.calculate_Vfs2(self.calc["t_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        
+        self.calc["CC1_inv"] = ((1 - (3/self.data["n_inv"]))*self.calc["Mej_inv"])/((4/3)*np.pi*((self.calc["q_inv"]/self.cnst.a2)*((self.calc["Rs_inv"]/self.cnst.bbm)**(self.data["n_inv"]-2))))
+        self.calc["CC2_inv"] = (3*(self.data["n_inv"]-3)*((self.calc["CC1_inv"])**(2/(3-self.data["n_inv"]))))/((10**18)*10*(self.data["n_inv"]-5))
+        
+        self.calc["t_inv"] = ((self.data["n_inv"]-3)*self.calc["Rs_inv"])/((self.data["n_inv"]-2)*self.calc["Vfs_inv"])
+        self.calc["E51_inv"] = (self.calc["Mej_inv"]*self.calc["CC2_inv"]*(self.calc["t_inv"]**(-2)))/(10**33)
+        
+        self.calculate_FS2_inv(self.calc["t_inv"], self.calc["E51_inv"], self.data["n_inv"])
+        
+        for x in range (0,9):
+            self.calculate_FS2_inv(self.calc["t_inv"], self.calc["E51_inv"], self.data["n_inv"])
+            
+#######################################################################################################################
+    def verify_S2_reverse_generalT_n6to14(self):
+        
+        self.calc["gc_inv"] = ((1-(3/self.data["n_inv"]))*self.calc["Mej_inv"])/(((4*np.pi)/3)*(((self.calc["E51_inv"]*(10**51)*10*(self.data["n_inv"]-5))/(self.calc["Mej_inv"]*3*(self.data["n_inv"]-3)))**((3-self.data["n_inv"])/2)))
+        self.calc["RC_inv"] = (self.cnst.a2*self.calc["gc_inv"]/self.calc["q_inv"])**(1/(self.data["n_inv"]-2))
+        self.calc["Rf2_inv"] = self.calc["RC_inv"] * self.cnst.bbm * ((self.calc["t_inv"])**((self.data["n_inv"]-3)/(self.data["n_inv"]-2)))
+        self.calc["Rs_ver"] = self.calc["Rf2_inv"]
+        self.calc["EM_ver"] = MU_ratej*16*(((self.calc["q_inv"])**2)*self.cnst.dEMr2)/(self.calc["Rs_ver"]*MU_e*MU_H*M_H*M_H)
+        self.calc["TE_ver"] = (self.calc["Ts2_inv"]*self.cnst.dTr2/MU_t)*(((1/(MU_Iej*self.calc["gei2_inv"]))+(1/MU_eej))**(-1))
+        
+        self.calc["EMF_predict"] = (self.cnst.dEMf2*16*(self.calc["q_inv"]**2))/(MU_e*MU_H*M_H*M_H*self.calc["Rs_ver"])
+        self.calc["Terav_predict"] = (self.cnst.dTf2/MU_t)*self.calc["Ts2_inv"]*(((1/(MU_I*self.calc["gei2_inv"]))+(1/MU_e))**(-1))
+        self.calc["Rrev_predict"] = self.calc["Rf2_inv"]/self.cnst.l_ed
+        
+        self.calc["Rs_ver"] = self.calc["Rs_ver"]/PC_TO_KM/10**5
+        self.calc["EM_ver"] = self.calc["EM_ver"] /10**58
+        self.calc["TE_ver"] = self.calc["TE_ver"]/KEV_TO_ERG*BOLTZMANN
+        
+        self.calc["Terav_predict"] = self.calc["Terav_predict"]/KEV_TO_ERG*BOLTZMANN
+        self.calc["EMF_predict"] = self.calc["EMF_predict"]/10**58
+        self.calc["Rrev_predict"] = self.calc["Rrev_predict"]/PC_TO_KM/10**5
+        
+        self.calc["t_inv"] = self.calc["t_inv"]/YR_TO_SEC
+
+
+#######################################################################################################################
+#######################################################################################################################        
+    def calculate_Cloudy_Forward_values(self):
+        self.calc["Te_inv"] = self.data["Te_f_inv"] * KEV_TO_ERG / BOLTZMANN
+        self.calc["Rs_inv"] = self.data["R_f_inv"]*PC_TO_KM*10**5
+        self.calc["Mej_inv"] = self.data["m_eject_inv"] * SOLAR_MASS_TO_GRAM
+        self.calc["EM_inv"] = self.data["EM58_f_inv"]*10**58
+        self.calc["dEMw_inv"] = self.cloudyCnst.dEMc 
+        self.calc["dTw_inv"] = self.cloudyCnst.dTc 
+        self.calc["Kw_inv"] = self.cloudyCnst.Kc 
+        self.calc["E51_inv"] = 1.0
+        
+        self.calc["n0_inv"] = (((self.calc["EM_inv"]*MU_e)/(16*self.calc["dEMw_inv"]*MU_H*((self.calc["Rs_inv"])**3)))**(0.5))
+        self.calc["Vfs1_inv"] = ((16*BOLTZMANN*self.calc["Te_inv"])/(3*MU_t*M_H*self.calc["dTw_inv"]*0.5))**0.5
+        
+        self.calc["t_inv"] = (self.calc["Rs_inv"]*1.2373*(10**10))/(self.calc["Vfs1_inv"]*0.3163*PC_TO_KM*(10**5)) # in years
+        self.calc["E51_inv"] = (self.calc["n0_inv"]*((self.calc["Rs_inv"]/(0.3163*PC_TO_KM*10**5))**5))/(self.calc["Kw_inv"]*(self.calc["t_inv"]**2))
+        self.calculate_nuSed_inv(self.calc["t_inv"], self.calc["E51_inv"])
+        
+        for x in range (0,13):
+            self.calculate_nuSed_inv(self.calc["t_inv"], self.calc["E51_inv"])
+        
+#######################################################################################################################        
+    def calculate_Vfs_cloudy(self, ty, E51):
+        
+        self.calc["VSW_inv"] = 1.2373*(10**10)*((self.calc["E51_inv"]*self.calc["Kw_inv"]/self.calc["n0_inv"])**0.2)*((self.calc["t_inv"])**(-0.6))
+        self.calc["Ts_inv"] = (3/16)*MU_t*(M_H/BOLTZMANN)*(self.calc["VSW_inv"]**2)
+        self.calc["lnLambda2_inv"] = np.log(1.2*(10**5)*0.5*(self.calc["Ts_inv"]**1.5)/(2*(self.calc["n0_inv"]**0.5)))
+        self.calc["fl2_inv"] = (5*self.calc["lnLambda2_inv"]*4*self.calc["n0_inv"]*self.calc["t_inv"]*YR_TO_SEC)/(3*81*((self.calc["Ts_inv"])**1.5)*4)
+        self.calc["geif_inv"] = 1 - 0.97*np.exp(-1.0*((self.calc["fl2_inv"])**0.4)*(1+0.3*self.calc["fl2_inv"]**0.6))
+        self.calc["Tfs_inv"] = ((self.calc["Te_inv"]/self.calc["dTw_inv"])*MU_t)*((1/(MU_I*self.calc["geif_inv"]))+(1/MU_e))
+        self.calc["Vfs_cloudy_inv"] = ((16*BOLTZMANN*self.calc["Tfs_inv"])/(3*MU_t*M_H))**0.5
+
+#######################################################################################################################
+    def calculate_nuSed_inv(self, ty, E51):
+        self.calculate_Vfs_cloudy(ty, E51)
+        self.calc["t_inv"] = (self.calc["Rs_inv"]*1.2373*(10**10))/(self.calc["Vfs_cloudy_inv"]*0.3163*PC_TO_KM*(10**5))
+        self.calc["E51_inv"] = (self.calc["n0_inv"]*((self.calc["Rs_inv"]/(0.3163*PC_TO_KM*10**5))**5))/(self.calc["Kw_inv"]*(self.calc["t_inv"]**2))
+        
+#######################################################################################################################        
+    def verify_forward_cloudyT_n6to14(self):
+        self.calc["RSW_inv"] = 0.3163*PC_TO_KM*(10**5)*((self.calc["E51_inv"]*self.calc["Kw_inv"]/self.calc["n0_inv"])**0.2)*((self.calc["t_inv"])**(0.4))
+        self.calc["Rs_ver"] = self.calc["RSW_inv"]
+        self.calc["EM_ver"]=16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.calc["dEMw_inv"]*((self.calc["Rs_ver"])**3)
+        
+        self.calc["TeS_ver"] = self.calc["Ts_inv"]/MU_t/((1/(MU_I*self.calc["geif_inv"]))+(1/MU_e)) #K
+        self.calc["TE_ver"] = self.calc["TeS_ver"]*self.calc["dTw_inv"]
+
+        self.calc["Rs_ver"] = self.calc["Rs_ver"]/PC_TO_KM/10**5
+        self.calc["EM_ver"] = self.calc["EM_ver"] /10**58
+        self.calc["TE_ver"] = self.calc["TE_ver"]/KEV_TO_ERG*BOLTZMANN
+                
+                
+#######################################################################################################################
+#######################################################################################################################
+    def calculate_Sedov_Forward_values(self):
+        self.calc["Te_inv"] = self.data["Te_f_inv"] * KEV_TO_ERG / BOLTZMANN
+        self.calc["Rs_inv"] = self.data["R_f_inv"]*PC_TO_KM*10**5
+        self.calc["EM_inv"] = self.data["EM58_f_inv"]*10**58
+        self.calc["dEMw_inv"] = 1 
+        self.calc["dTw_inv"] = 1 
+        self.calc["Kw_inv"] = 1 
+        
+        self.calc["n0_inv"] = (((self.calc["EM_inv"]*MU_e)/(16*self.calc["dEMw_inv"]*MU_H*((self.calc["Rs_inv"])**3)))**(0.5))
+        self.calc["Vfs1_inv"] = ((16*BOLTZMANN*self.calc["Te_inv"])/(3*MU_t*M_H*self.calc["dTw_inv"]))**0.5
+        
+        self.calc["t_inv"] = (self.calc["Rs_inv"]*1.237*(10**10))/(self.calc["Vfs1_inv"]*0.316*PC_TO_KM*(10**5)) # in years
+
+        self.calc["E51_inv"] = (self.calc["n0_inv"]*((self.calc["Rs_inv"]/(0.3163*PC_TO_KM*10**5))**5))/(self.calc["Kw_inv"]*(self.calc["t_inv"]**2))
+       
+        self.calculate_nuSed_sedov_inv(self.calc["t_inv"], self.calc["E51_inv"])
+        for x in range (0,15):
+            self.calculate_nuSed_sedov_inv(self.calc["t_inv"], self.calc["E51_inv"])
+
+#######################################################################################################################
+    def calculate_nuSed_sedov_inv(self, ty, E51):
+        self.calc["VSW_inv"] = 1.2373*(10**10)*((self.calc["E51_inv"]*self.calc["Kw_inv"]/self.calc["n0_inv"])**0.2)*((self.calc["t_inv"])**(-0.6))
+        self.calc["Ts_inv"] = (3/16)*MU_t*(M_H/BOLTZMANN)*(self.calc["VSW_inv"]**2)
+        self.calc["Vfs_sedov_inv"] = ((16*BOLTZMANN*self.calc["Ts_inv"])/(3*MU_t*M_H))**0.5
+        
+        self.calc["t_inv"] = (self.calc["Rs_inv"]*1.2373*(10**10))/(self.calc["Vfs_sedov_inv"]*0.3163*PC_TO_KM*(10**5))
+        self.calc["E51_inv"] = (self.calc["n0_inv"]*((self.calc["Rs_inv"]/(0.3163*PC_TO_KM*10**5))**5))/(self.calc["Kw_inv"]*(self.calc["t_inv"]**2))
+        
+#######################################################################################################################        
+    def verify_forward_sedovT_n6to14(self):
+        self.calc["RSW_inv"] = 0.3163*PC_TO_KM*(10**5)*((self.calc["E51_inv"]*self.calc["Kw_inv"]/self.calc["n0_inv"])**0.2)*((self.calc["t_inv"])**(0.4))
+        self.calc["Rs_ver"] = self.calc["RSW_inv"]
+        self.calc["EM_ver"]=16*((self.calc["n0_inv"])**2)*(MU_H/MU_e)*self.calc["dEMw_inv"]*((self.calc["Rs_ver"])**3)
+        self.calc["TE_ver"] = self.calc["Ts_inv"]*self.calc["dTw_inv"]
+
+        self.calc["Rs_ver"] = self.calc["Rs_ver"]/PC_TO_KM/10**5
+        self.calc["EM_ver"] = self.calc["EM_ver"] /10**58
+        self.calc["TE_ver"] = self.calc["TE_ver"]/KEV_TO_ERG*BOLTZMANN
+                
+                
+#######################################################################################################################
+#######################################################################################################################
+    def get_dEMF(self, n, t):
+        """Get dEMF from n and t values
+
+        Returns:
+            dEMF: dEMF value from input parameters
+        """
+        self.dEMFcnsts =dEMFInv_DICT[n]
+       
+        if (t < self.dEMFcnsts.t1ef):
+           dEMF = self.dEMFcnsts.def0
+        
+        elif ((self.dEMFcnsts.t1ef <= t) and (t < self.dEMFcnsts.t2ef)):
+            dEMF = self.dEMFcnsts.def0 * ((t/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef))
+            
+        elif ((self.dEMFcnsts.t2ef <= t) and (t < self.dEMFcnsts.t3ef)):
+            dEMF = (self.dEMFcnsts.def0 * ((self.dEMFcnsts.t2ef/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef)) 
+                                        * ((t/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)))
+
+        elif ((self.dEMFcnsts.t3ef <= t) and (t < self.dEMFcnsts.t4ef)):
+            dEMF = (self.dEMFcnsts.def0 * ((self.dEMFcnsts.t2ef/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef)) 
+                                        * ((self.dEMFcnsts.t3ef/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)) 
+                                        * ((t/self.dEMFcnsts.t3ef)**(self.dEMFcnsts.a3ef)))
+            
+        elif (self.dEMFcnsts.t4ef <= t):
+            dEMF = (self.dEMFcnsts.def0 * ((self.dEMFcnsts.t2ef/self.dEMFcnsts.t1ef)**(self.dEMFcnsts.a1ef)) 
+                                        * ((self.dEMFcnsts.t3ef/self.dEMFcnsts.t2ef)**(self.dEMFcnsts.a2ef)) 
+                                        * ((self.dEMFcnsts.t4ef/self.dEMFcnsts.t3ef)**(self.dEMFcnsts.a3ef))
+                                        * ((t/self.dEMFcnsts.t4ef)**(self.dEMFcnsts.a4ef)))
+        return dEMF     
+            
+
+#######################################################################################################################
+    def get_dTF(self, n, t):
+        """Get dTF from n and t values
+
+        Returns:
+            dTF: dTF value from input parameters
+        """
+        self.dTFcnsts =dTFInv_DICT[n]
+       
+        if (t < self.dTFcnsts.t1tf):
+           dTF = self.dTFcnsts.dtf
+        
+        elif ((self.dTFcnsts.t1tf <= t) and (t < self.dTFcnsts.t2tf)):
+            dTF = self.dTFcnsts.dtf * ((t/self.dTFcnsts.t1tf)**(self.dTFcnsts.a1tf))
+            
+        elif (self.dTFcnsts.t2tf <= t):
+            dTF = (self.dTFcnsts.dtf * ((self.dTFcnsts.t2tf/self.dTFcnsts.t1tf)**(self.dTFcnsts.a1tf)) 
+                                        * ((t/self.dTFcnsts.t2tf)**(self.dTFcnsts.a2tf)))
+        return dTF     
+            
+
+#######################################################################################################################
+    def get_dEMR(self, n, t):
+        """Get dEMR from n and t values
+
+        Returns:
+            dEMR: dEMR value from input parameters
+        """
+        self.dEMRcnsts =dEMRInv_DICT[n]
+       
+        if (t < self.dEMRcnsts.t1er):
+           dEMR = self.dEMRcnsts.der * ((t/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a1er))
+        
+        elif ((self.dEMRcnsts.t1er <= t) and (t < self.dEMRcnsts.t2er)):
+            dEMR = self.dEMRcnsts.der * ((t/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er))
+            
+        elif ((self.dEMRcnsts.t2er <= t) and (t < self.dEMRcnsts.t3er)):
+            dEMR = (self.dEMRcnsts.der * ((self.dEMRcnsts.t2er/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er)) 
+                                        * ((t/self.dEMRcnsts.t2er)**(-1.0*self.dEMRcnsts.a3er)))
+
+        elif (self.dEMRcnsts.t3er <= t):
+            dEMR = (self.dEMRcnsts.der * ((self.dEMRcnsts.t2er/self.dEMRcnsts.t1er)**(-1.0*self.dEMRcnsts.a2er)) 
+                                        * ((self.dEMRcnsts.t3er/self.dEMRcnsts.t2er)**(-1.0*self.dEMRcnsts.a3er)) 
+                                        * ((t/self.dEMRcnsts.t3er)**(-1.0*self.dEMRcnsts.a4er)))
+        return dEMR     
+            
+
+#######################################################################################################################
+    def get_dTR(self, n, t):
+        """Get dTR from n and t values
+
+        Returns:
+            dTR: dTR value from input parameters
+        """
+        self.dTRcnsts =dTRInv_DICT[n]
+       
+        if (t < self.dTRcnsts.t1tr):
+           dTR = self.dTRcnsts.dtr * ((t/self.dTRcnsts.t1tr)**(self.dTRcnsts.a1tr))
+        
+        elif ((self.dTRcnsts.t1tr <= t) and (t < self.dTRcnsts.t2tr)):
+            dTR = self.dTRcnsts.dtr * ((t/self.dTRcnsts.t1tr)**(self.dTRcnsts.a2tr))
+            
+        elif ((self.dTRcnsts.t2tr <= t) and (t < self.dTRcnsts.t3tr)):
+            dTR = (self.dTRcnsts.dtr * ((self.dTRcnsts.t2tr/self.dTRcnsts.t1tr)**(self.dTRcnsts.a2tr)) 
+                                        * ((t/self.dTRcnsts.t2tr)**(self.dTRcnsts.a3tr)))
+
+        elif (self.dTRcnsts.t3tr <= t):
+            dTR = (self.dTRcnsts.dtr * ((self.dTRcnsts.t2tr/self.dTRcnsts.t1tr)**(self.dTRcnsts.a2tr)) 
+                                        * ((self.dTRcnsts.t3tr/self.dTRcnsts.t2tr)**(self.dTRcnsts.a3tr)) 
+                                        * ((t/self.dTRcnsts.t3tr)**(self.dTRcnsts.a4tr)))
+        return dTR     
+   
+       
 #####################################################################################################################
+#====================================================================================================================
 #####################################################################################################################
 class SNREmissivity:
     """Calculate and store emissivity data for a specific instance of a SuperNovaRemnant.
@@ -1831,7 +2781,7 @@ class SNREmissivity:
         self.cnst["luminosity"] = self.data["T_s"] * BOLTZMANN / PLANCK * self.cnst["spectrum"]
         self.root = root
         
-        if(((snr.data["t"] <= snr.calc["t_st"]) or (snr.data["s"] == 2)) and snr.data["model"] != "sedtay"):
+        if((snr.data["t"] <= snr.calc["t_st"]) or (snr.data["s"] == 2)):
             self.data["model"] = "chev"
             if snr.data["s"] == 0:
                 if snr.data["n"] >= 6:                             
@@ -1867,7 +2817,7 @@ class SNREmissivity:
             self._s_point = self._chev_s_point
             self._opt_dict = self._chev_opt_dict
             
-        elif (snr.data["model"] == "cism" or snr.data["model"] == "sedtay" ):
+        elif (snr.data["model"] == "cism"):
             self.data["model"] = "cism"
             self.data["c_tau"] = snr.data["c_tau"]
             self.data["em_point"] = []
@@ -1944,12 +2894,8 @@ class SNREmissivity:
                       "Tem": em[3], "Tem_f": em[4], "Tem_r": em[5]}
         else:
             output = {"lum": lum, "em": em[0], "Tem": em[1]}
-            
-        if (self.widgets["model"].get_value() == "cism" and self.widgets["c_tau"].get_value() == 0):
-            gui.OutputValue.update(output, self.root, 1)
-        else:
-            gui.OutputValue.update(output, self.root, 0)
-        
+
+        gui.OutputValue.update(output, self.root, 0)
 
 #######################################################################################################################
     def update_specific_intensity(self):

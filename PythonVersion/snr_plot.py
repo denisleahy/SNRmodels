@@ -3,7 +3,7 @@
 Classes used to create MatPlotLib plots with custom scientific notation display and simple update functions.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: April 1st, 2019
+Version: Jan 2019
 """
 
 import math
@@ -48,7 +48,7 @@ class OutputPlot(Figure):
         self.graph.xaxis.labelpad = 2
         self.graph.yaxis.labelpad = 2
         self.canvas = FigureCanvasTkAgg(self, master=master)
-        self.canvas.show()
+        self.canvas.draw() #show() in other versions of Python
         self.canvas.get_tk_widget().grid(column=0, row=0)
         # Remove scientific notation from edges of axes (will be added to axis titles when plot limits are known)
         self.graph.xaxis.offsetText.set_visible(False)
@@ -91,13 +91,12 @@ class OutputPlot(Figure):
         self.graph.set_xlabel(x_label)
         self.graph.set_ylabel(y_label)
         self.tight_layout(rect=(0, 0, 1, top), pad=0.5)  # Second tight-layout adjusts for the new axis titles
-        self.canvas.show()
+        self.canvas.draw() #show() in other version of Python
 
 ##############################################################################################################################
     def clear_plot(self):
         """Remove all lines from plot."""
-
-        self.graph.lines = []
+        self.graph.lines.clear()
 
 ##############################################################################################################################
     def update_plot(self):
@@ -127,7 +126,7 @@ class TimePlot(OutputPlot):
             size (tuple): width and height of plot in inches
         """
 
-        self.ylabel_dict = {"v": r"Velocity/km s$^{-1}$", "r": "Radius/pc", "eMeas": "Emission Measure/cm^-3", "temper": "Temperature/keV"}
+        self.ylabel_dict = {"v": r"Velocity/km s$^{-1}$", "r": "Radius/pc", "eMeas": "Emission Measure/cm^-3", "temper": "Temperature/K"}
         # Set default to radius graph
         self.ylabel = self.ylabel_dict["r"]
         OutputPlot.__init__(self, master, size, "Time/yr", self.ylabel)

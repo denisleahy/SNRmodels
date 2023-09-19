@@ -1,9 +1,11 @@
-SNR Modelling Program - version 1.1.1, April 1st, 2019
+SNR Modelling Program - version 2.0, Sept, 2022
 ===================================================
 Developed by Dr. Denis Leahy, Bryson Lawton and Jacqueline Williams
 
 Description: A GUI program used to model supernova remnants.
 
+See published papers (A Python Calculator for Supernova Remnant Evolution, D. A. Leahy and J. E. Williams, ApJ 153, 239, 2017; Emission Measures and Emission-measure-weighted Temperatures of Shocked Interstellar Medium and Ejecta in Supernova Remnants, Denis Leahy, Yuyang Wang, Bryson Lawton, Sujith Ranasinghe, and Miroslav Filipović, ApJ 158, 149, 2019; Evolutionary Models for 43 Galactic Supernova Remnants with Distances and X-Ray Spectra, D. A. Leahy , S. Ranasinghe, and M. Gelowitz, ApJSupp. 248, 16) for details of models used and associated
+calculations. 
 
 Python requirements
 -------------------
@@ -33,6 +35,7 @@ command line using "python snr.py"
 Required files (must remain in the same folder):
  - snr.py
  - snr_calc.py
+ - snr_fileCalc.py
  - snr_gui.py
  - snr_plot.py
  - data directory (should contain 30 files)
@@ -87,8 +90,10 @@ Version 1.1.1 Changes
 -----------------------------------
 - Emission Measure and Temperature plots added to main window for s = 0, n > 5 cases
 
+-----------------------------------
+Version 2.0 Changes
+----------------------------------
 
-See arXiv paper (astrop-ph.HE 1701.05942) for details of models used and associated
-calculations.
+See "Evolutionary Models for 43 Galactic Supernova Remnants with Distances and X-Ray Spectra, D. A. Leahy , S. Ranasinghe, and M. Gelowitz, ApJSupp. 248, 16" for the inverse mode calculation, added to SNRpy Version 2.0. 
 
 This program is open source and is licensed under The 3-Clause BSD License.

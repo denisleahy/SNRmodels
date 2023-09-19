@@ -3,34 +3,36 @@
 Creates GUI and initializes case-specific functions.
 
 Authors: Denis Leahy, Bryson Lawton, Jacqueline Williams
-Version: April 1st, 2019
+Version: Jan 2019
 """
 
 import snr_gui as gui
 import snr_calc as calc
 import snr_plot as plt
+import snr_fileCalc as fileCalc
 import math
 
 # To create executable:
 # pyinstaller --noconfirm --log-level=ERROR filename.spec
 
-ELEMENT_NAMES = {"H": "Hydrogen", "He": "Helium", "C": "Carbon", "O": "Oxygen", "Ne": "Neon", "N": "Nitrogen",
-                 "Mg": "Magnesium", "Si": "Silicon", "Fe": "Iron", "S": "Sulphur"}
-ELEMENT_ORDER = ["He", "C", "N", "O", "Ne", "Mg", "Si", "S", "Fe"]
+ELEMENT_NAMES = {"H": "Hydrogen", "He": "Helium", "O": "Oxygen", "C": "Carbon", "Ne": "Neon", "N": "Nitrogen",
+                 "Mg": "Magnesium", "Si": "Silicon", "Fe": "Iron", "S": "Sulphur", "Ca": "Calcium", "Ni": "Nickel", 
+                 "Na": "Sodium", "Al": "Aluminium", "Ar": "Argon"}
+ELEMENT_ORDER = ["He", "O", "C",  "Ne", "N", "Mg", "Si", "Fe", "S", "Ca", "Ni", "Na", "Al", "Ar"]
 MODEL_DICT = {"fel": "Fractional energy loss", "standard": "Standard", "hld": "Hot low-density media", "cism": "Cloudy ISM", "sedtay": "Sedov-Taylor"}
-ABUNDANCE = {"Solar": {"H": 12, "He": 10.93, "C": 8.52, "O": 8.83, "Ne": 8.08, "N": 7.92, "Mg": 7.58, "Si": 7.55,
-                       "Fe": 7.50, "S": 7.33},
-             "LMC": {"H": 12, "He": 10.94, "C": 8.04, "N": 7.14, "O": 8.35, "Ne": 7.61, "Na": 7.15, "Mg": 7.47,
-                     "Si": 7.81, "S": 6.70, "Cl": 4.76, "Ar": 6.29, "Ca": 5.89, "Sc": 2.64, "Ti": 4.81, "V": 4.08,
-                     "Cr": 5.47, "Mn": 5.21, "Fe": 7.23},
-             "Ejecta": {"H": 12, "He": 14, "C": 16, "O": 18, "Ne": 16, "N": 16, "Mg": 16, "Si": 16, "Fe": 16, "S": 16},
-             "CC": {"H": 12, "He": 11.22, "C": 9.25, "N": 8.62, "O": 9.69, "Ne": 8.92, "Mg": 8.30, "Si": 8.79,
-                    "S": 8.54, "Fe": 8.55},
-             "Type Ia": {"H": 12, "He": 11.40, "C": 12.60, "N": 7.50, "O": 12.91, "Ne": 11.04, "Mg": 11.55, "Si": 12.75,
-                         "S": 12.43, "Fe": 13.12}
-             }
-switchPlotToDefault = False
-             
+ABUNDANCE = {"Solar": {"H": 12, "He": 10.93, "O": 8.69, "C": 8.43, "Ne": 7.93, "N": 7.83, "Mg": 7.60, "Si": 7.51,
+                       "Fe": 7.50, "S": 7.12, "Ca": 6.34, "Ni": 6.22, "Na": 6.24, "Al": 6.45, "Ar": 6.40},
+
+             "LMC": {"H": 12, "He": 10.94, "O": 8.35, "C": 8.04, "Ne": 7.61, "N": 7.14, "Mg": 7.47, "Si": 7.81,
+                       "Fe": 7.23, "S": 6.70, "Ca": 6.04, "Ni": 5.92, "Na": 5.94, "Al": 6.15, "Ar": 6.10},
+                       
+             "Type Ia": {"H": 12, "He": 10.93, "O": 12.69, "C": 0, "Ne": 12.654, "N": 0, "Mg": 11.962, "Si": 12.872,
+                       "Fe": 13.133, "S": 12.518, "Ca": 11.973, "Ni": 11.853, "Na": 6.24, "Al": 6.45, "Ar": 11.815},
+                         
+            "CC": {"H": 12, "He": 11.216, "O": 9.548, "C": 9.163, "Ne": 8.773, "N": 8.527, "Mg": 8.324, "Si": 8.746,
+                       "Fe": 8.554, "S": 8.331, "Ca": 7.483, "Ni": 7.363, "Na": 7.383, "Al": 7.593, "Ar": 7.543}
+             } 
+switchPlotToDefault = False     
 ##############################################################################################################################
 def get_model_name(key, snr_em):
     """Get name of model to be shown on emissivity window.
@@ -88,8 +90,8 @@ def s_change(update=True):
             # Reset n value if old value not available
             widgets["n"].value_var.set(0)
     else:
-        # Restore previous values for input parameters m_w and v_w and reduce available n values
         global switchPlotToDefault
+        # Restore previous values for input parameters m_w and v_w and reduce available n values
         widgets["m_w"].input.grid()
         widgets["m_w"].label.grid()
         widgets["v_w"].input.grid()
@@ -129,7 +131,7 @@ def n_change(update=True):
         global switchPlotToDefault
         if (widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
             switchPlotToDefault = True
-            widgets["plot_type"].value_var.set("r")
+            widgets["plot_type"].value_var.set("r")   
         widgets["plot_type"].input["eMeas"].config(state="disabled")
         widgets["plot_type"].input["temper"].config(state="disabled") 
  
@@ -255,15 +257,17 @@ def model_change(update=True):
             widgets["plot_type"].input["eMeas"].config(state="normal")
             widgets["plot_type"].input["temper"].config(state="normal")
         else:
-            if(widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
+            if (widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
                 switchPlotToDefault = True
                 widgets["plot_type"].value_var.set("r")
+
             widgets["plot_type"].input["eMeas"].config(state="disabled")
             widgets["plot_type"].input["temper"].config(state="disabled") 
     else:
-        if(widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
+        if (widgets["plot_type"].get_value() == "eMeas" or widgets["plot_type"].get_value() == "temper"):
             switchPlotToDefault = True
             widgets["plot_type"].value_var.set("r")
+
         widgets["plot_type"].input["eMeas"].config(state="disabled")
         widgets["plot_type"].input["temper"].config(state="disabled") 
         widgets["s"].input.config(state="disabled")
@@ -353,7 +357,7 @@ def abundance_window(abundance_dict, ab_type):
         window = gui.ScrollWindow()
         ab_window_open[ab_type] = window
         window.root.focus()
-        window.root.geometry("%dx%d+%d+%d" %(200, 290, APP.root.winfo_x(), APP.root.winfo_y()))
+        window.root.geometry("%dx%d+%d+%d" %(200, 400, APP.root.winfo_x(), APP.root.winfo_y()))
         frame = window.container
         gui.SectionTitle(frame, "Element", size=10)
         if window.os != "Windows":
@@ -372,7 +376,7 @@ def abundance_window(abundance_dict, ab_type):
             types = ("Solar", "LMC")
             default_type = ism_ab_type
         else:
-            types = ("CC", "Type Ia")
+            types = ("Type Ia", "CC")
             default_type = ej_ab_type
             
         gui.InputDropdown(gui.LayoutFrame(button_frame, row=0, column=0, padding=(2, 1, 2, 0)), "ab_type", None,
@@ -422,6 +426,253 @@ def ab_window_close(root, ab_dict, ab_type, event=None):
         ej_ab_type = ab_dict.pop("ab_type")
     root.destroy()
     SNR.update_output()
+    SNR_INV.update_output()
+    
+##############################################################################################################################
+def inverse_window():
+    """Create window for inverse mode."""
+    global inverseWindowActive
+    global forward_mode
+    global SNR_INV
+    global inverseWindow
+    
+    if (inverseWindowActive == True):
+        inverseWindow.root.focus()
+        return
+    else:
+        inverseWindowActive = True
+        inverseWindow = gui.ScrollWindow()
+        inverseWindow.root.focus()
+        inverseWindow.root.geometry("%dx%d+%d+%d" %(900, 400, (ws-900)/2, (hs-400)/2))
+        inverseWindow.root.update()
+    
+        root_id_inv = str(inverseWindow.root)
+        SNR_INV = calc.SuperNovaRemnantInverse(root_id_inv)
+        gui.InputParam.instances[root_id_inv] = {}
+        widgets = gui.InputParam.instances[root_id_inv]
+    
+        inverseFrame = inverseWindow.container
+        inverseWindow.input_frame = gui.LayoutFrame(inverseFrame, 2, row=0, column=0)
+        gui.SectionTitle(inverseWindow.input_frame, "Inverse Mode Input", 2)
+        gui.InputDropdown(inverseWindow.input_frame, "ctau_inv", "C/\u03C4", 0, SNR_INV.update_output, (0, 1, 2, 4))
+        gui.InputDropdown(inverseWindow.input_frame, "s_inv", "CSM power-law index, s:", 0, lambda: s_change_inv(widgets, SNR_INV), (0, 2))
+        gui.InputDropdown(inverseWindow.input_frame, "n_inv", "Ejecta power-law index, n:", 7, SNR_INV.update_output,
+            (6, 7, 8, 9, 10, 11, 12, 13, 14))
+    
+        #Inverse Input Parameters
+        gui.SectionTitle(inverseWindow.input_frame, "Observed Shock Input Parameters:", 2)
+        gui.InputEntry(inverseWindow.input_frame, "m_eject_inv", "Ejected mass (M\u2609):", 1.2, SNR_INV.update_output, gt_zero)
+        gui.InputEntry(inverseWindow.input_frame, "R_f_inv", "Forward Shock Radius (pc):", 3.32, SNR_INV.update_output, gt_zero)    
+        gui.InputEntry(inverseWindow.input_frame, "Te_f_inv", "Forward Shock X-ray\nElectron Temperature (keV):", 1.06, SNR_INV.update_output, gt_zero)
+        gui.InputEntry(inverseWindow.input_frame, "EM58_f_inv", "Forward Shock X-ray\nEmission Measure (x 10\u2075\u2078 cm\u207B\u00B3):", 0.9459, SNR_INV.update_output, gt_zero) 
+       
+        gui.InputEntry(inverseWindow.input_frame, "Te_r_inv", "Reverse Shock X-ray\nElectron Temperature (keV):", 1.06, SNR_INV.update_output, gt_zero)
+        gui.InputEntry(inverseWindow.input_frame, "EM58_r_inv", "Reverse Shock X-ray\nEmission Measure (x 10\u2075\u2078 cm\u207B\u00B3):", 0.9459, SNR_INV.update_output, gt_zero) 
+    
+        
+        gui.InputParam(inverseWindow.input_frame, label="Model type:")
+    
+        MODEL_FRAME_INV = gui.LayoutFrame(inverseWindow.input_frame, 0, row=100, column=0, columnspan=2)
+        gui.InputRadio(MODEL_FRAME_INV, "model_inv", None, "standard_forward", lambda *args: model_change_inv(widgets, SNR_INV),
+                   (("standard_forward", "Standard Forward Shock", "\n"), ("standard_reverse", "Standard Reverse Shock", "\n"), 
+                    ("cloudy_forward", "Cloudy Forward Shock (m\u2091\u2C7C = 0)", "\n"),
+                    ("sedov_forward", "Sedov (T\u2091 = T\u1D62)", "\n")), padding=(10, 0, 0, 0))
+        
+        inverseWindow.output_frame = gui.LayoutFrame(inverseFrame, 2, row = 0, column=1, columnspan=2)
+        
+    
+        inverseWindow.output_values = gui.LayoutFrame(inverseWindow.output_frame, (20, 0, 0, 0), row=0, column=0)
+        inverseWindow.output_times = gui.LayoutFrame(inverseWindow.output_frame, (20, 0, 0, 0), row=0, column=1)
+    
+        gui.SectionTitle(inverseWindow.output_values, "Output\nCalculated values:", 2)
+        gui.SectionTitle(inverseWindow.output_times, "\nPhase transition times:", 2)
+        gui.OutputValue(inverseWindow.output_values, "t_inv", "", "yrs")
+        gui.OutputValue(inverseWindow.output_values, "E51_inv", "", "x 10\u2075\u00B9 erg")
+        gui.OutputValue(inverseWindow.output_values, "n_0_inv", "", "cm\u207B\u00B3", padding=(0, 0, 10, 10))
+        gui.OutputValue(inverseWindow.output_values, "R_f_out", "  Forward shock radius:", "pc")
+        gui.OutputValue(inverseWindow.output_values, "t_f_out", "  Forward shock electron temperature:", "keV")
+        gui.OutputValue(inverseWindow.output_values, "EM_f_out", "   Forward shock emission measure:", "x 10\u2075\u2078 cm\u207B\u00B3", padding=(0, 0, 0, 10))
+        gui.OutputValue(inverseWindow.output_values, "R_r_out", "  Reverse shock radius:", "pc")
+        gui.OutputValue(inverseWindow.output_values, "t_r_out", "  Reverse shock electron temperature:", "keV")
+        gui.OutputValue(inverseWindow.output_values, "EM_r_out", "  Reverse shock emission measure:", "x 10\u2075\u2078 cm\u207B\u00B3")
+        gui.OutputValue(inverseWindow.output_times, "t-s2", "", "", padding=0)
+        gui.OutputValue(inverseWindow.output_times, "Core", "", "", padding=0)
+        gui.OutputValue(inverseWindow.output_times, "Rev", "", "", padding=0)
+        
+        gui.SubmitButton(inverseWindow.output_values, "Run Inverse Calc on Datafile", lambda: fileCalc.openFileBrowser(inverseWindow, SNR_INV), sticky="w", padx=15, pady=(10, 10))
+        
+        model_change_inv(widgets, SNR_INV, False),
+        
+        inverseWindow.root.bind("<1>", lambda event: event.widget.focus_set())
+        inverseWindow.root.protocol("WM_DELETE_WINDOW", lambda: close_inverse_window(inverseWindow.root, SNR_INV))
+        SNR_INV.update_output()
+        inverseWindow.root.update()
+        inverseWindow.canvas.config(scrollregion=(0, 0, inverseWindow.container.winfo_reqwidth(), inverseWindow.container.winfo_reqheight()))
+
+##############################################################################################################################
+def close_inverse_window(root, SNR_INV):
+    global inverseWindowActive
+    inverseWindowActive = False
+    SNR_INV.update_output()
+    root.destroy()
+    
+##############################################################################################################################
+def model_change_inv(widgets, SNR_INV, update=True):
+    """Changes SNRPY to inverse mode
+
+    Args:
+        update (bool): true if SuperNovaRemnant instance needs to be updated (generally only False when run during
+                       initialization to avoid running update_output multiple times unnecessarily)
+    """
+
+    if widgets["model_inv"].get_value() == "standard_forward":
+        widgets["s_inv"].input.config(state="normal")
+        widgets["n_inv"].input.config(state="normal")
+        widgets["m_eject_inv"].input.config(state="normal")
+        widgets["m_eject_inv"].value_var.set("1.2")
+        widgets["ctau_inv"].input.grid_remove()
+        widgets["ctau_inv"].label.grid_remove()
+        widgets["s_inv"].input.grid()
+        widgets["s_inv"].label.grid()
+        widgets["n_inv"].input.grid()
+        widgets["n_inv"].label.grid()
+        
+            
+        widgets["Te_r_inv"].input.grid_remove()
+        widgets["Te_r_inv"].label.grid_remove()
+        widgets["EM58_r_inv"].input.grid_remove()
+        widgets["EM58_r_inv"].label.grid_remove()
+        
+        widgets["Te_f_inv"].input.grid()
+        widgets["Te_f_inv"].label.grid()
+        widgets["EM58_f_inv"].input.grid()
+        widgets["EM58_f_inv"].label.grid()
+           
+        
+    elif widgets["model_inv"].get_value() == "standard_reverse":
+        widgets["s_inv"].input.config(state="normal")
+        widgets["n_inv"].input.config(state="normal")
+        widgets["m_eject_inv"].input.config(state="normal")
+        widgets["m_eject_inv"].value_var.set("1.2")
+        widgets["ctau_inv"].input.grid_remove()
+        widgets["ctau_inv"].label.grid_remove()
+        widgets["s_inv"].input.grid()
+        widgets["s_inv"].label.grid()
+        widgets["n_inv"].input.grid()
+        widgets["n_inv"].label.grid()
+        
+        widgets["Te_f_inv"].input.grid_remove()
+        widgets["Te_f_inv"].label.grid_remove()
+        widgets["EM58_f_inv"].input.grid_remove()
+        widgets["EM58_f_inv"].label.grid_remove()
+        
+        widgets["Te_r_inv"].input.grid()
+        widgets["Te_r_inv"].label.grid()
+        widgets["EM58_r_inv"].input.grid()
+        widgets["EM58_r_inv"].label.grid()
+    
+    elif widgets["model_inv"].get_value() == "cloudy_forward":
+        
+        widgets["m_eject_inv"].value_var.set("0")
+        widgets["m_eject_inv"].input.config(state="disabled")
+        widgets["ctau_inv"].input.grid()
+        widgets["ctau_inv"].label.grid()
+        widgets["s_inv"].value_var.set("0")
+        widgets["s_inv"].input.grid_remove()
+        widgets["s_inv"].label.grid_remove()
+        widgets["n_inv"].input.grid_remove()
+        widgets["n_inv"].label.grid_remove()
+        
+        widgets["Te_r_inv"].input.grid_remove()
+        widgets["Te_r_inv"].label.grid_remove()
+        widgets["EM58_r_inv"].input.grid_remove()
+        widgets["EM58_r_inv"].label.grid_remove()
+        
+        widgets["Te_f_inv"].input.grid()
+        widgets["Te_f_inv"].label.grid()
+        widgets["EM58_f_inv"].input.grid()
+        widgets["EM58_f_inv"].label.grid()
+        
+    elif widgets["model_inv"].get_value() == "sedov_forward":
+        
+        widgets["m_eject_inv"].value_var.set("0")
+        widgets["m_eject_inv"].input.config(state="disabled")
+        widgets["ctau_inv"].input.grid_remove()
+        widgets["ctau_inv"].label.grid_remove()
+        widgets["s_inv"].input.grid()
+        widgets["s_inv"].label.grid()
+        widgets["n_inv"].input.grid()
+        widgets["n_inv"].label.grid()
+        widgets["s_inv"].value_var.set("0")
+        widgets["s_inv"].input.config(state="disabled")
+        widgets["n_inv"].input.config(state="disabled")
+        
+        widgets["Te_r_inv"].input.grid_remove()
+        widgets["Te_r_inv"].label.grid_remove()
+        widgets["EM58_r_inv"].input.grid_remove()
+        widgets["EM58_r_inv"].label.grid_remove()
+        
+        widgets["Te_f_inv"].input.grid()
+        widgets["Te_f_inv"].label.grid()
+        widgets["EM58_f_inv"].input.grid()
+        widgets["EM58_f_inv"].label.grid()
+        
+    else: # Default standard forward
+        widgets["s_inv"].input.config(state="normal")
+        widgets["n_inv"].input.config(state="normal")
+        widgets["m_eject_inv"].input.config(state="normal")
+        widgets["m_eject_inv"].value_var.set("1.2")
+        widgets["ctau_inv"].input.grid_remove()
+        widgets["ctau_inv"].label.grid_remove()
+        widgets["s_inv"].input.grid()
+        widgets["s_inv"].label.grid()
+        widgets["n_inv"].input.grid()
+        widgets["n_inv"].label.grid()
+            
+        widgets["Te_r_inv"].input.grid_remove()
+        widgets["Te_r_inv"].label.grid_remove()
+        widgets["EM58_r_inv"].input.grid_remove()
+        widgets["EM58_r_inv"].label.grid_remove()
+        
+        widgets["Te_f_inv"].input.grid()
+        widgets["Te_f_inv"].label.grid()
+        widgets["EM58_f_inv"].input.grid()
+        widgets["EM58_f_inv"].label.grid()
+        
+        
+    if update:
+        SNR_INV.update_output()
+
+    
+##############################################################################################################################
+def s_change_inv(widgets, SNR_INV, update=True):
+    """Changes available input parameters when s is changed in the inverse window
+
+    Args:
+        update (bool): true if SuperNovaRemnant instance needs to be updated (generally only False when run during
+                       initialization to avoid running update_output multiple times unnecessarily)
+    """
+
+    if widgets["s_inv"].value_var.get() == '0':
+        widgets["model_inv"].input["cloudy_forward"].config(state="normal")
+        widgets["model_inv"].input["sedov_forward"].config(state="normal")
+        widgets["n_inv"].input.config(values=(6, 7, 8, 9, 10, 11, 12, 13, 14)) 
+        
+        if widgets["n_inv"].get_value() not in (6, 7, 8, 9, 10, 11, 12, 13, 14):
+            # Reset n value if old value not available
+            widgets["n_inv"].value_var.set(6)
+    else:
+        # Restore previous values for input parameters m_w and v_w and reduce available n values
+        widgets["model_inv"].input["cloudy_forward"].config(state="disabled")
+        widgets["model_inv"].input["sedov_forward"].config(state="disabled")
+        widgets["n_inv"].input.config(values=(6, 7, 8, 9, 10, 11, 12, 13, 14))
+        
+        if widgets["n_inv"].get_value() not in (6, 7, 8, 9, 10, 11, 12, 13, 14):
+            # Reset n value if old value not available
+            widgets["n_inv"].value_var.set(6)
+    if update:
+        SNR_INV.update_output()
+
 
 ##############################################################################################################################
 def emissivity_window():
@@ -513,13 +764,14 @@ def gt_zero(value):
     
     return value > 0
 
-##############################################################################################################################    
+##############################################################################################################################
 if __name__ == '__main__':
     
     ab_window_open = {"ISM": False, "Ejecta": False}
+    inverseWindowActive = False
     # Set initial ISM abundance type
     ism_ab_type = "Solar"
-    ej_ab_type = "Type Ia"
+    ej_ab_type = "CC"
     APP = gui.ScrollWindow("root")
     root_id = "." + APP.container.winfo_parent().split(".")[1]
     gui.InputParam.instances[root_id] = {}
@@ -566,6 +818,7 @@ if __name__ == '__main__':
     SNR.buttons["ej_ab"] = gui.SubmitButton(
         APP.input, "Change Ejecta Abundances", lambda: abundance_window(SNR.data["ej_abundance"], "Ejecta"), sticky="w",
         padx=5)
+    SNR.buttons["inv"] = gui.SubmitButton(APP.input, "Open Inverse Mode", inverse_window, sticky="w", padx=5, pady=(5, 5))
     gui.InputParam(APP.input, label="Model type:")
     
     MODEL_FRAME = gui.LayoutFrame(APP.input, 0, row=100, column=0, columnspan=2)
@@ -642,7 +895,6 @@ if __name__ == '__main__':
     gui.OutputValue(APP.output_times, "t-FEL", "", "yr")
     gui.OutputValue(APP.output_times, "t-MRG", "", "yr")
 
-    
     APP.root.bind("<Return>", enter_pressed)
     SNR.update_output()
     model_change(False)
@@ -652,5 +904,6 @@ if __name__ == '__main__':
     widgets["t_fel"].value_var.set(round(SNR.calc["t_pds"]))
     APP.canvas.config(scrollregion=(0, 0, APP.container.winfo_reqwidth(), APP.container.winfo_reqheight()))
     APP.root.mainloop()
+
 
 ##############################################################################################################################
